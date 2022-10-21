@@ -1,0 +1,4 @@
+.Rbuildignore
+.Rhistory
+.RData
+*.pdf
