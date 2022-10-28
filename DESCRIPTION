@@ -1,10 +1,10 @@
 Package: ShiVa
 Type: Package
-Title: Detection of evolutionary shifts in both optimal value and variance
-Version: 0.1.0
+Title: Detection of Evolutionary Shifts in both Optimal Value and Variance
+Version: 1.0.0
 Author: Wensha Zhang [aut], Tobias Kenney [aut], Lam Si Tung Ho [aut]
 Maintainer: Wensha Zhang <wn209685@dal.ca>
-Description: This package provides tool functions for phylognetic analysis of evolutionary shifts.  The main function of this package is to detect the shifts in both variance and optimal value based on minimizing the loss function with L1 penalty.
+Description: Provides tool functions for phylognetic analysis of evolutionary shifts.  The main function of this package is to detect the shifts in both variance and optimal value based on minimizing the loss function with L1 penalty.
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
@@ -18,5 +18,8 @@ Imports:
 	igraph,
 	stats
 Suggests:
-	MASS
+	MASS,
+	knitr,
+	rmarkdown 
+VignetteBuilder: knitr
 RoxygenNote: 7.2.0
