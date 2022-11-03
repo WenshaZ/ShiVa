@@ -326,8 +326,8 @@ fit_OU_mean_var = function(tree, Y ,alpha, sv_mean, sv_var,max.steps=2000,t = 0.
 #' \item{lambda2}{selected lambda for shifts in variance}
 #' @export
 #' @import ape
-#' @importFrom glmnet 
-#' @importFrom cv.glmnet
+#' @importFrom glmnet glmnet 
+#' @importFrom glmnet cv.glmnet
 #' @importFrom PIGShift OU.vcv
 #' @importFrom graphics par
 #' @examples
