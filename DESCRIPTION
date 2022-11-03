@@ -16,7 +16,8 @@ Imports:
 	psych,
 	ape,
 	igraph,
-	stats
+	stats,
+	graphics
 Suggests:
 	MASS,
 	knitr,
