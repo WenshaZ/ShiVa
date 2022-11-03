@@ -4,14 +4,10 @@
 \alias{generate_design_matrix}
 \title{generate_design_matrix}
 \usage{
-generate_design_matrix(tree, type = "simpX", alpha)
+generate_design_matrix(tree)
 }
 \arguments{
 \item{tree}{phylogenetic tree}
-
-\item{type}{type of design matrix}
-
-\item{alpha}{parameter alpha}
 }
 \value{
 \item{X}{desigh matrix}

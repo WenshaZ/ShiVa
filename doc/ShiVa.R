@@ -1,8 +1,4 @@
-### R code from vignette source 'ShiVa.Rnw'
-
-###################################################
-### code chunk number 1: ShiVa.Rnw:19-48
-###################################################
+## -----------------------------------------------------------------------------
 library(ape)
 library(MASS)
 library(PIGShift)
@@ -33,27 +29,18 @@ beta[true_shifts_mean] = size_mean
 eps = mvrnorm(n = 1, mu = rep(0,nrow(X)), Sigma = Sigma)
 Y = X%*%beta+eps
 
-
-###################################################
-### code chunk number 2: ShiVa.Rnw:59-64
-###################################################
+## -----------------------------------------------------------------------------
 result = get_mean_var_shifts(Y, tree, 1, 1, 0.02)
 sv_mean = (1:ncol(X))[result$beta!=0]
 sv_var = (1:ncol(X))[result$gamma!=0]
 sv_mean # shifts in optimal values
 sv_var # shifts in variance
 
-
-###################################################
-### code chunk number 3: ShiVa.Rnw:75-77
-###################################################
+## -----------------------------------------------------------------------------
 OModel = fit_OU_mean_var(tree, Y ,1, sv_mean, sv_var)
 OModel$gamma[sv_var]
 
-
-###################################################
-### code chunk number 4: ShiVa.Rnw:87-95
-###################################################
+## -----------------------------------------------------------------------------
 result = get_mean_var_shifts_model_selection(Y,tree,1,NULL,exp(1:10-6))
 sv_mean = (1:ncol(X))[result$beta!=0]
 sv_var = (1:ncol(X))[result$gamma!=0]
@@ -62,5 +49,4 @@ sv_var # shifts in variance
 result$gamma[sv_var] # shift sizes
 result$lambda1
 result$lambda2
-
 

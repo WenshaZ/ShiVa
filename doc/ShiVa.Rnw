@@ -37,7 +37,7 @@ set.seed(123)
 tree = rcoal(80)
 tree$edge.length = tree$edge.length/max(node.depth.edgelength(tree))
 # generate design matrix
-X = generate_design_matrix(tree)
+X = generate_design_matrix(tree,type='simpX')
 V = OU.vcv(tree,alpha)
 tb = node.depth.edgelength(tree)[tree$edge[,1]]
 q = exp(-2*alpha*max(node.depth.edgelength(tree)))/(2*alpha)*(1-exp(2*alpha*tb))

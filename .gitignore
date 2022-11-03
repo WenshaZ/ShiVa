@@ -2,4 +2,8 @@
 .Rhistory
 .RData
 *.pdf
+<<<<<<< HEAD
 .Rproj.user
+=======
+*.Rproj
+>>>>>>> 4f4858b3e4bd8f967a5d67ec1d47c17eed6a1b83

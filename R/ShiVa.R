@@ -1,36 +1,23 @@
 #' @title generate_design_matrix
 #' @description generate design matrix
 #' @param tree phylogenetic tree
-#' @param type type of design matrix
-#' @param alpha parameter alpha
 #' @export
 #' @importFrom igraph graph.edgelist get.shortest.paths
 #' @return
 #' \item{X}{desigh matrix}
-generate_design_matrix = function(tree, type = "simpX", alpha){
+
+generate_design_matrix = function(tree){
   nTips = length(tree$tip.label)
-  rNode = nTips + 1
   nEdges = Nedge(tree)
-  g = graph.edgelist(tree$edge, directed = TRUE)
   X = matrix(0, nTips, nEdges)
-  root2tip = get.shortest.paths(g, rNode, to = 1:nTips, mode = "out",
+  path = nodepath(tree)
+  edges = graph.edgelist(tree$edge, directed = TRUE)
+  X = matrix(0, nTips, nEdges)
+  path = get.shortest.paths(edges, nTips+1, to = 1:nTips, mode = "out",
                                 output = "epath")$epath
-  stopifnot(all(lapply(root2tip, length) > 0))
-  Tval = sum(tree$edge.length[root2tip[[1]]])
-  if (type == "orgX") {
-    for (i in 1:nTips) {
-      lvec = c(0, tree$edge.length[root2tip[[i]]])
-      timeVec = Tval - cumsum(lvec)
-      timeVec = timeVec[1:length(timeVec) - 1]
-      X[i, root2tip[[i]]] = 1 - exp(-alpha * timeVec)
-    }
+  for(i in 1:nTips){
+    X[i,path[[i]]] = 1
   }
-  else if (type == "simpX") {
-    for (i in 1:nTips) {
-      X[i, root2tip[[i]]] = 1
-    }
-  }
-  else stop("Undefined design matrix type")
   return(X)
 }
 
@@ -118,7 +105,7 @@ update_step_gamma  = function(gamma_k, X_k, Sigma, r, lambda2, t,penalty,V,q_k){
 #' @importFrom PIGShift OU.vcv
 
 get_mean_var_shifts = function(Y, tree, alpha, lambda1, lambda2, max.steps=1000, t = 0.01, penalty = 'L1', thres = 0.001,sigma2= NULL){
-  X = generate_design_matrix(tree,type='simpX')
+  X = generate_design_matrix(tree)
   if(alpha == 0){
     V = vcv(tree)
   }else{
@@ -194,7 +181,7 @@ get_mean_var_shifts = function(Y, tree, alpha, lambda1, lambda2, max.steps=1000,
     max_update = max(abs(c(last_beta-beta,last_gamma-gamma)))
     #print(paste('max_update:',max_update,sep=' '))
     if(max_update<thres) {
-      print(paste(s,'steps to converge',sep=' '))
+      #print(paste(s,'steps to converge',sep=' '))
       break
     }
   }
@@ -225,7 +212,7 @@ get_mean_var_shifts = function(Y, tree, alpha, lambda1, lambda2, max.steps=1000,
 #' @importFrom PIGShift OU.vcv
 #' @importFrom stats coef lm
 fit_OU_mean_var = function(tree, Y ,alpha, sv_mean, sv_var,max.steps=2000,t = 0.01, thres=0.01){
-  X = generate_design_matrix(tree,type='simpX')
+  X = generate_design_matrix(tree)
   if(alpha == 0){
     V = vcv(tree)
   }else{
@@ -296,7 +283,7 @@ fit_OU_mean_var = function(tree, Y ,alpha, sv_mean, sv_var,max.steps=2000,t = 0.
     max_update = max(abs(c(last_beta-beta,last_gamma-gamma,last_sigma2-sigma2_0)))
     #print(paste('max_update:',max_update,sep=' '))
     if(max_update<thres) {
-      print(paste(s,'steps to converge',sep=' '))
+      #print(paste(s,'steps to converge',sep=' '))
       break
     }
   }
@@ -340,25 +327,26 @@ fit_OU_mean_var = function(tree, Y ,alpha, sv_mean, sv_var,max.steps=2000,t = 0.
 #' @import ape
 #' @importFrom  glmnet cv.glmnet
 #' @importFrom PIGShift OU.vcv
+#' @importFrom graphics par
 #' @examples
 #' require(ape)
 #' require(MASS)
 #' require(PIGShift)
 #' alpha = 1
 #' sigma2_0 = alpha*2
-#' true_shifts_var = c(2) #shift configuration in variance
+#' true_shifts_var = c(10) #shift configuration in variance
 #' size_var = 10 #shift size in variance
 #' true_shifts_mean = 0 #shift configuration in mean
 #' size_mean = 0 #shift size in mean
 #' set.seed(123)
 #' # generate a tree
-#' tree1 = rcoal(80)
-#' tree1$edge.length = tree1$edge.length/max(node.depth.edgelength(tree1))
+#' tree = rcoal(20)
+#' tree$edge.length = tree$edge.length/max(node.depth.edgelength(tree))
 #' # generate design matrix
-#' X = generate_design_matrix(tree1,type='simpX')
-#' V = OU.vcv(tree1,alpha)
-#' tb = node.depth.edgelength(tree1)[tree1$edge[,1]]
-#' q = exp(-2*alpha*max(node.depth.edgelength(tree1)))/(2*alpha)*(1-exp(2*alpha*tb))
+#' X = generate_design_matrix(tree)
+#' V = OU.vcv(tree,alpha)
+#' tb = node.depth.edgelength(tree)[tree$edge[,1]]
+#' q = exp(-2*alpha*max(node.depth.edgelength(tree)))/(2*alpha)*(1-exp(2*alpha*tb))
 #' # simulate shifts in variance
 #' gamma = rep(0,ncol(X))
 #' gamma[true_shifts_var]  = size_var
@@ -369,10 +357,10 @@ fit_OU_mean_var = function(tree, Y ,alpha, sv_mean, sv_var,max.steps=2000,t = 0.
 #' # generate simulated data
 #' eps = mvrnorm(n = 1, mu = rep(0,nrow(X)), Sigma = Sigma)
 #' Y = X%*%beta+eps
-#' result = get_mean_var_shifts_model_selection(Y,tree1,alpha,NULL,exp(1:10-6))
+#' result = get_mean_var_shifts_model_selection(Y,tree,alpha,NULL,exp(1:10-6))
 
 get_mean_var_shifts_model_selection = function(Y, tree, alpha, lambda1_list=NULL, lambda2_list, max.steps=1000, t = 0.01, penalty = 'L1', thres = 0.005,sigma2= NULL){
-  X = generate_design_matrix(tree,type='simpX')
+  X = generate_design_matrix(tree)
   if(alpha == 0){
     V = vcv(tree)
   }else{
@@ -463,7 +451,7 @@ get_mean_var_shifts_model_selection = function(Y, tree, alpha, lambda1_list=NULL
       max_update = max(abs(c(last_beta-beta,last_gamma-gamma)))
       #print(paste('max_update:',max_update,sep=' '))
       if(max_update<thres) {
-        print(paste(s,'steps to converge',sep=' '))
+        #print(paste(s,'steps to converge',sep=' '))
         break
       }
     }
@@ -481,9 +469,9 @@ get_mean_var_shifts_model_selection = function(Y, tree, alpha, lambda1_list=NULL
     }
   }
 
-  #par(mfrow=c(1,2))
-  #plot(log(lambda2_list),loglik_list,type='l',main='loglik')
-  #plot(log(lambda2_list),BIC_list,type='l',main='BIC')
+  par(mfrow=c(1,2))
+  plot(log(lambda2_list),loglik_list,type='l',main='loglik')
+  plot(log(lambda2_list),BIC_list,type='l',main='BIC')
 
   return(ret)
 }
