@@ -2,7 +2,8 @@
 #' @description generate design matrix
 #' @param tree phylogenetic tree
 #' @export
-#' @importFrom igraph graph.edgelist get.shortest.paths
+#' @importFrom igraph graph.edgelist
+#' @importFrom igraph get.shortest.paths
 #' @return
 #' \item{X}{desigh matrix}
 
@@ -325,7 +326,8 @@ fit_OU_mean_var = function(tree, Y ,alpha, sv_mean, sv_var,max.steps=2000,t = 0.
 #' \item{lambda2}{selected lambda for shifts in variance}
 #' @export
 #' @import ape
-#' @importFrom  glmnet cv.glmnet
+#' @importFrom glmnet 
+#' @importFrom cv.glmnet
 #' @importFrom PIGShift OU.vcv
 #' @importFrom graphics par
 #' @examples
