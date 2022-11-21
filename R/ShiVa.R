@@ -362,6 +362,9 @@ fit_OU_mean_var = function(tree, Y ,alpha, sv_mean, sv_var,max.steps=2000,t = 0.
 #' result = get_mean_var_shifts_model_selection(Y,tree,alpha,NULL,exp(1:10-6))
 
 get_mean_var_shifts_model_selection = function(Y, tree, alpha, lambda1_list=NULL, lambda2_list, max.steps=1000, t = 0.01, penalty = 'L1', thres = 0.005,sigma2= NULL){
+  oldpar <- par(no.readonly = TRUE)
+  on.exit(par(oldpar))
+  
   X = generate_design_matrix(tree)
   if(alpha == 0){
     V = vcv(tree)
