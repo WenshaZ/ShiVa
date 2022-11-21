@@ -5,7 +5,7 @@
 #' @importFrom igraph graph.edgelist
 #' @importFrom igraph get.shortest.paths
 #' @return
-#' \item{X}{desigh matrix}
+#' \item{X}{design matrix}
 
 generate_design_matrix = function(tree){
   nTips = length(tree$tip.label)

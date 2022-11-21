@@ -10,7 +10,7 @@ generate_design_matrix(tree)
 \item{tree}{phylogenetic tree}
 }
 \value{
-\item{X}{desigh matrix}
+\item{X}{design matrix}
 }
 \description{
 generate design matrix
