@@ -4,7 +4,7 @@ Title: Detection of Evolutionary Shifts in both Optimal Value and Variance
 Version: 1.0.0
 Authors@R: 
     c(person("Wensha", "Zhang", email = "wn209685@dal.ca", role = c("aut", "cre")),
-      person("Lam", "Ho", "Si Tung", email = "Lam.Ho@dal.ca", role = "aut"),
+      person("Lam Si Tung", "Ho", email = "Lam.Ho@dal.ca", role = "aut"),
       person("Toby", "Kenney", email = "tb432381@dal.ca", role = "aut"))
 Description: Abrupt environmental changes can lead to evolutionary shifts in not only mean (optimal value), but also variance of descendants in trait evolution. There are some methods to detect shifts in optimal value but few studies consider the shifts in variance. The main function of this package is to detect the shifts in both variance and optimal value based on minimizing the loss function with L1 penalty.
 License: GPL (>= 3)
