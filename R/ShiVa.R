@@ -12,9 +12,9 @@ generate_design_matrix = function(tree){
   nEdges = Nedge(tree)
   X = matrix(0, nTips, nEdges)
   path = nodepath(tree)
-  edges = graph.edgelist(tree$edge, directed = TRUE)
+  edges = igraph::graph.edgelist(tree$edge, directed = TRUE)
   X = matrix(0, nTips, nEdges)
-  path = get.shortest.paths(edges, nTips+1, to = 1:nTips, mode = "out",
+  path = igraph::get.shortest.paths(edges, nTips+1, to = 1:nTips, mode = "out",
                                 output = "epath")$epath
   for(i in 1:nTips){
     X[i,path[[i]]] = 1
