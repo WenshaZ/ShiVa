@@ -7,6 +7,7 @@
 \author{Wensha Zhang, Lam Si Tung Ho, Toby Kenney}
 
 \begin{document}
+\SweaveOpts{concordance=TRUE}
 
 \maketitle
 
@@ -37,7 +38,7 @@ set.seed(123)
 tree = rcoal(80)
 tree$edge.length = tree$edge.length/max(node.depth.edgelength(tree))
 # generate design matrix
-X = generate_design_matrix(tree,type='simpX')
+X = generate_design_matrix(tree)
 V = OU.vcv(tree,alpha)
 tb = node.depth.edgelength(tree)[tree$edge[,1]]
 q = exp(-2*alpha*max(node.depth.edgelength(tree)))/(2*alpha)*(1-exp(2*alpha*tb))
@@ -64,8 +65,8 @@ parameter. Now we apply the function on the generated dataset.
 Example:
 <<>>=
 result = get_mean_var_shifts(Y, tree, 1, 1, 0.02)
-sv_mean = (1:ncol(X))[result$beta!=0]
-sv_var = (1:ncol(X))[result$gamma!=0]
+sv_mean = result$sv_mean
+sv_var = result$sv_var
 sv_mean # shifts in optimal values
 sv_var # shifts in variance
 @
@@ -98,7 +99,7 @@ values and it cannot be NULL.
 
 Example:
 <<>>=
-result = get_mean_var_shifts_model_selection(Y,tree,1,NULL,exp(1:10-6))
+result = get_mean_var_shifts_model_selection(Y,tree,1,NULL,exp(1:10-6),top_k = 3)$best_model
 sv_mean = (1:ncol(X))[result$beta!=0]
 sv_var = (1:ncol(X))[result$gamma!=0]
 sv_mean # shifts in optimal values

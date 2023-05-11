@@ -10,7 +10,7 @@ fit_OU_mean_var(
   alpha,
   sv_mean,
   sv_var,
-  max.steps = 2000,
+  max.steps = 1000,
   t = 0.01,
   thres = 0.01
 )

@@ -10,11 +10,10 @@ get_mean_var_shifts_model_selection(
   alpha,
   lambda1_list = NULL,
   lambda2_list,
-  max.steps = 1000,
-  t = 0.01,
-  penalty = "L1",
-  thres = 0.005,
-  sigma2 = NULL
+  criterion = "BIC",
+  max.steps = 100,
+  nfolds = 8,
+  top_k = 10
 )
 }
 \arguments{
@@ -28,27 +27,17 @@ get_mean_var_shifts_model_selection(
 
 \item{lambda2_list}{a list of degree of shrinkage parameters for shifts in variance}
 
-\item{max.steps}{maximum number of steps, default 1000}
+\item{criterion}{the criterion for model selection, default BIC}
 
-\item{t}{step size, default 0.01}
+\item{max.steps}{maximum number of steps, default 100}
 
-\item{penalty}{"L1" or "None"}
+\item{nfolds}{number of folds for cross validation for tunning lambda1, default 8}
 
-\item{thres}{threshold for stopping optimization, default 0.005}
-
-\item{sigma2}{the original sigma2, default is unknown.}
+\item{top_k}{conduct backward correction on k original models with the best criterion scores, default 10}
 }
 \value{
-\item{beta}{Shift sizes for optimal value}
-\item{gamma}{Shift sizes for variance}
-\item{sigma2}{Original variance without shifts}
-\item{b0}{The intercept term}
-\item{loglik}{log-likelihood of the fitted model}
-\item{BIC}{BIC of the fitted model}
-\item{fitted.values}{fitted trait values}
-\item{Sigma}{estimated covariance matrix}
-\item{lambda1}{selected lambda for shifts in optimal value}
-\item{lambda2}{selected lambda for shifts in variance}
+\item{best_model}{Fitted OU model}
+\item{score_summary}{score summary table}
 }
 \description{
 This function provide estimation of shift sizes in optimal value and shifts in variance (including model selection)
@@ -59,11 +48,11 @@ require(MASS)
 require(PIGShift)
 alpha = 1
 sigma2_0 = alpha*2
-true_shifts_var = c(10) #shift configuration in variance
-size_var = 10 #shift size in variance
+true_shifts_var = c(8) #shift configuration in variance
+size_var = 15 #shift size in variance
 true_shifts_mean = 0 #shift configuration in mean
 size_mean = 0 #shift size in mean
-set.seed(123)
+set.seed(345)
 # generate a tree
 tree = rcoal(20)
 tree$edge.length = tree$edge.length/max(node.depth.edgelength(tree))
@@ -82,5 +71,5 @@ beta[true_shifts_mean] = size_mean
 # generate simulated data
 eps = mvrnorm(n = 1, mu = rep(0,nrow(X)), Sigma = Sigma)
 Y = X\%*\%beta+eps
-result = get_mean_var_shifts_model_selection(Y,tree,alpha,NULL,exp(1:10-6))
+result = get_mean_var_shifts_model_selection(Y,tree,alpha,NULL,exp(1:10-6),nfolds=3)
 }

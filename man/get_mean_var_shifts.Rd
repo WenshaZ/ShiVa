@@ -13,7 +13,7 @@ get_mean_var_shifts(
   max.steps = 1000,
   t = 0.01,
   penalty = "L1",
-  thres = 0.001,
+  thres = 0.01,
   sigma2 = NULL
 )
 }
@@ -39,8 +39,10 @@ get_mean_var_shifts(
 \item{sigma2}{the original sigma2, default is unknown.}
 }
 \value{
-\item{beta}{Shifts in optimal value}
-\item{gamma}{Shifs in variance}
+\item{sv_mean}{Shifts in optimal value}
+\item{sv_var}{Shifs in variance}
+\item{beta}{Shift coefficients in optimal value}
+\item{gamma}{Shift coefficients in variance}
 \item{sigma2}{Original variance without shifts}
 \item{b0}{The intercept term}
 }
