@@ -1,0 +1,59 @@
+---
+title: "ShiVa Example: Detecting Evolutionary Shifts in Mean and Variance"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ShiVa Example}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+This vignette demonstrates how to use the ShiVa R package to detect evolutionary shifts in both optimal trait values (mean) and evolutionary variance under an Ornstein-Uhlenbeck (OU) model.
+We illustrate the process using a floral trait dataset from Euphorbiaceae species. It is available at phylolm.
+
+```{r setup}
+library(ShiVa)
+library(phylolm)
+
+```
+
+# Setup
+Load the required packages:
+```{r}
+data('flowerTree')
+data('flowerSize')
+```
+
+# Load example data
+We load the phylogenetic tree and trait data. The trait is floral diameter, log-transformed.
+```{r}
+Y = flowerSize$log_transformed_size
+names(Y) = rownames(flowerSize)
+tree = flowerTree
+# normalize the tree
+tree$edge.length = flowerTree$edge.length/max(node.depth.edgelength(flowerTree))
+```
+
+# Run ShiVa
+```{r}
+set.seed(111)
+result = ShiVa(Y,tree, lambda.type = "lambda.min")
+
+```
+
+# Visualize Detected Shifts
+```{r,fig.height=8,fig.width=8}
+plot_model_shifts(tree,Y,result$best_model,"ShiVa")
+```
+
+# Summarize Shifts
+```{r}
+summary_shifts(result)
+```

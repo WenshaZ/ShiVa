@@ -2,33 +2,34 @@
 % Please edit documentation in R/ShiVa.R
 \name{update_step_gamma}
 \alias{update_step_gamma}
-\title{update_step_gamma}
+\title{Update Step for Gamma}
 \usage{
 update_step_gamma(gamma_k, X_k, Sigma, r, lambda2, t, penalty, V, q_k)
 }
 \arguments{
-\item{gamma_k}{The gamma value to be updated}
+\item{gamma_k}{Current value of the \code{gamma_k} parameter to be updated.}
 
-\item{X_k}{The kth column of the design matrix}
+\item{X_k}{The \eqn{k}th column of the design matrix \code{X}.}
 
-\item{Sigma}{The covariance matrix}
+\item{Sigma}{Current covariance matrix.}
 
-\item{r}{The residual vector (Y-X*beta)}
+\item{r}{Residual vector, typically \code{Y - X \%*\% beta}.}
 
-\item{lambda2}{The degree of shrinkage for gamma}
+\item{lambda2}{Non-negative tuning parameter controlling the degree of L1 shrinkage applied to \code{gamma_k}.}
 
-\item{t}{step size}
+\item{t}{Step size for the gradient update.}
 
-\item{penalty}{"L1" or "None"}
+\item{penalty}{Penalty type; either \code{"L1"} for soft thresholding or \code{"None"} for unpenalized updates.}
 
-\item{V}{The original covariance matrix when sigma^2 = 1}
+\item{V}{Baseline covariance matrix when \eqn{\sigma^2 = 1}.}
 
-\item{q_k}{The kth element of designed vector q}
+\item{q_k}{The \eqn{k}th element of the design vector \code{q}, used in the update.}
 }
 \value{
-\item{gamma_k}{The updated gamma value}
-\item{Sigma}{The updated covariance matrix}
+A list containing:
+\item{gamma_k}{The updated value of \code{gamma_k}.}
+\item{Sigma}{The updated covariance matrix \code{Sigma}.}
 }
 \description{
-This function calculate the updated gamma for each step
+Performs one update step for the \code{gamma_k} parameter in an iterative optimization routine, potentially applying L1 shrinkage.
 }

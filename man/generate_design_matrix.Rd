@@ -2,16 +2,20 @@
 % Please edit documentation in R/ShiVa.R
 \name{generate_design_matrix}
 \alias{generate_design_matrix}
-\title{generate_design_matrix}
+\title{Generate Design Matrix}
 \usage{
-generate_design_matrix(tree)
+generate_design_matrix(tree, type = "simpX", alpha = 0)
 }
 \arguments{
-\item{tree}{phylogenetic tree}
+\item{tree}{A phylogenetic tree of class \code{phylo}.}
+
+\item{type}{A character string specifying the type of design matrix to generate. Options are \code{"simpX"} or \code{"orgX"}.}
+
+\item{alpha}{The selection strength parameter (only used when \code{type = "orgX"}).}
 }
 \value{
-\item{X}{design matrix}
+A design matrix \code{X}, where each row corresponds to a tip and each column to an edge in the tree.
 }
 \description{
-generate design matrix
+Constructs a design matrix for a given phylogenetic tree, used in Ornstein-Uhlenbeck modeling.
 }

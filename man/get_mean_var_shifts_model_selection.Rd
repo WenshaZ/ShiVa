@@ -2,74 +2,56 @@
 % Please edit documentation in R/ShiVa.R
 \name{get_mean_var_shifts_model_selection}
 \alias{get_mean_var_shifts_model_selection}
-\title{get_mean_var_shifts_model_selection}
+\title{Model Selection for OU Shifts in Optimal value and Variance}
 \usage{
 get_mean_var_shifts_model_selection(
   Y,
   tree,
   alpha,
+  t = 0.01,
   lambda1_list = NULL,
-  lambda2_list,
+  lambda2_list = exp(1:10 * 0.4 - 6),
   criterion = "BIC",
-  max.steps = 100,
+  max.steps = 300,
   nfolds = 8,
-  top_k = 10
+  top_k = 10,
+  measurement_error = FALSE,
+  lambda.type = "lambda.1se",
+  max.num.shifts = Inf
 )
 }
 \arguments{
-\item{Y}{a vector of trait values}
+\item{Y}{A numeric vector of trait values for the species at the tips of the phylogenetic tree.}
 
-\item{tree}{a phylogenetic tree}
+\item{tree}{A phylogenetic tree of class \code{phylo}.}
 
-\item{alpha}{the parameter for selection strength}
+\item{alpha}{A non-negative numeric value representing the selection strength in the OU process.}
 
-\item{lambda1_list}{a list of degree of shrinkage parameters for shifts in optimal value}
+\item{t}{Step size for iterative optimization. Default is 0.01.}
 
-\item{lambda2_list}{a list of degree of shrinkage parameters for shifts in variance}
+\item{lambda1_list}{A numeric vector of candidate \eqn{\lambda_1} values controlling shrinkage for shifts in optimal values.}
 
-\item{criterion}{the criterion for model selection, default BIC}
+\item{lambda2_list}{A numeric vector of candidate \eqn{\lambda_2} values controlling shrinkage for shifts in variance. Default is exp(1:10*0.4-6)}
 
-\item{max.steps}{maximum number of steps, default 100}
+\item{criterion}{Model selection criterion to optimize. Options include \code{"BIC"}, \code{"mBIC"}, or \code{"pBIC"}. Default is \code{"BIC"}.}
 
-\item{nfolds}{number of folds for cross validation for tunning lambda1, default 8}
+\item{max.steps}{Maximum number of optimization steps. Default is 300.}
 
-\item{top_k}{conduct backward correction on k original models with the best criterion scores, default 10}
+\item{nfolds}{Number of cross-validation folds for tuning \code{lambda1}. Default is 8.}
+
+\item{top_k}{Number of top candidate models (ranked by criterion) to further refine using backward correction. Default is 10.}
+
+\item{measurement_error}{Logical. If \code{TRUE}, estimates a separate measurement error variance component. Default is \code{FALSE}.}
+
+\item{lambda.type}{A character string specifying the cross-validation rule used to select \code{lambda1} from \code{lambda1_list}. Options are \code{"lambda.min"} (minimum CV error) and \code{"lambda.1se"} (1-SE rule, higher penalty). Default is \code{"lambda.1se"}.}
+
+\item{max.num.shifts}{An integer specifying the maximum number of allowed shifts (combined across mean and variance). Default is \code{Inf}.}
 }
 \value{
-\item{best_model}{Fitted OU model}
-\item{score_summary}{score summary table}
+A list containing:
+\item{best_model}{The final selected OU model object, with estimated shifts and parameters.}
+\item{score_summary}{A data frame summarizing the model selection results, including pre- and post-correction scores and shift locations.}
 }
 \description{
-This function provide estimation of shift sizes in optimal value and shifts in variance (including model selection)
-}
-\examples{
-require(ape)
-require(MASS)
-require(PIGShift)
-alpha = 1
-sigma2_0 = alpha*2
-true_shifts_var = c(8) #shift configuration in variance
-size_var = 15 #shift size in variance
-true_shifts_mean = 0 #shift configuration in mean
-size_mean = 0 #shift size in mean
-set.seed(345)
-# generate a tree
-tree = rcoal(20)
-tree$edge.length = tree$edge.length/max(node.depth.edgelength(tree))
-# generate design matrix
-X = generate_design_matrix(tree)
-V = OU.vcv(tree,alpha)
-tb = node.depth.edgelength(tree)[tree$edge[,1]]
-q = exp(-2*alpha*max(node.depth.edgelength(tree)))/(2*alpha)*(1-exp(2*alpha*tb))
-# simulate shifts in variance
-gamma = rep(0,ncol(X))
-gamma[true_shifts_var]  = size_var
-Sigma = V*sigma2_0 +  X\%*\%diag(gamma)\%*\%t(X)*V+ X\%*\%diag(gamma*q)\%*\%t(X)
-# simulate shifts in mean
-beta = rep(0,ncol(X))
-beta[true_shifts_mean] = size_mean
-# generate simulated data
-eps = mvrnorm(n = 1, mu = rep(0,nrow(X)), Sigma = Sigma)
-Y = X\%*\%beta+eps
-result = get_mean_var_shifts_model_selection(Y,tree,alpha,NULL,exp(1:10-6),nfolds=3)
+Performs model selection to estimate the locations and magnitudes of evolutionary shifts in optimal trait values (mean) and diffusion variance under an Ornstein-Uhlenbeck (OU) process. This function searches across user-defined grids of shrinkage parameters for both types of shifts, uses cross-validation for selecting \code{lambda1}, and applies backward correction to refine top candidate models.
 }

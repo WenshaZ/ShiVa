@@ -2,46 +2,58 @@
 % Please edit documentation in R/ShiVa.R
 \name{fit_OU_mean_var}
 \alias{fit_OU_mean_var}
-\title{fit_OU_mean_var}
+\title{Fit OU Model with Shifts in Mean and Variance}
 \usage{
 fit_OU_mean_var(
   tree,
   Y,
   alpha,
-  sv_mean,
-  sv_var,
+  shifts_mean,
+  shifts_var,
   max.steps = 1000,
   t = 0.01,
-  thres = 0.01
+  thres = 0.01,
+  measurement_error = FALSE,
+  max.num.shifts = Inf
 )
 }
 \arguments{
-\item{tree}{a phylogenetic tree}
+\item{tree}{A phylogenetic tree of class \code{phylo}.}
 
-\item{Y}{a vector of trait values}
+\item{Y}{A numeric vector of continuous trait values at the tips of the tree.}
 
-\item{alpha}{the parameter for selection strength}
+\item{alpha}{A non-negative numeric value specifying the strength of selection in the OU process.}
 
-\item{sv_mean}{shifts in optimal value}
+\item{shifts_mean}{An integer vector indicating the indices of branches where shifts in the optimal trait value occur.}
 
-\item{sv_var}{shifts in variance}
+\item{shifts_var}{An integer vector indicating the indices of branches where shifts in evolutionary variance occur.}
 
-\item{max.steps}{maximum number of steps, default 1000}
+\item{max.steps}{Maximum number of optimization steps. Default is 1000.}
 
-\item{t}{step size, default 0.01}
+\item{t}{Step size for the optimizer. Default is 0.01.}
 
-\item{thres}{threshold for stopping optimization}
+\item{thres}{Convergence threshold for change in log-likelihood. Default is 0.01.}
+
+\item{measurement_error}{Logical. If \code{TRUE}, a separate measurement error variance is estimated and added to the diagonal of the covariance matrix.}
+
+\item{max.num.shifts}{Maximum allowed number of shifts (combined for mean and variance). Default is \code{Inf}.}
 }
 \value{
-\item{beta}{Shift sizes for optimal value}
-\item{gamma}{Shift sizes for variance}
-\item{sigma2}{Original variance without shifts}
-\item{b0}{The intercept term}
-\item{loglik}{log-likelihood of the fitted model}
-\item{BIC}{BIC of the fitted model}
-\item{fitted.values}{fitted trait values}
-\item{Sigma}{estimated covariance matrix}
+A list containing:
+\item{shifts_mean}{Indices of branches with non-zero shifts in optimal trait value.}
+\item{shifts_var}{Indices of branches with non-zero shifts in evolutionary variance.}
+\item{beta}{Estimated shift magnitudes for optima values.}
+\item{gamma}{Estimated shift magnitudes for variance.}
+\item{sigma2}{Estimated base evolutionary variance.}
+\item{b0}{Estimated intercept (ancestral trait value).}
+\item{sigma2_error}{Estimated measurement error variance (only returned if \code{measurement_error = TRUE}).}
+\item{loglik}{Log-likelihood of the fitted model.}
+\item{BIC}{BBIC for model selection.}
+\item{mBIC}{mBIC for accounting shift sparsity and shared support.}
+\item{pBIC}{pBIC incorporating determinant of projected design matrix.}
+\item{fitted.values}{Fitted trait values based on the estimated model.}
+\item{Sigma}{Estimated trait covariance matrix under the fitted model.}
 }
 \description{
-This function provide estimation of shift sizes in optimal value and shifts in variance given estimated shifts
+Fits an Ornstein-Uhlenbeck (OU) model with user-specified shifts in both optimal trait values (mean) and evolutionary variance along a phylogeny. The method uses numerical optimization to estimate shift magnitudes, base variance, and intercept, and can optionally incorporate measurement error in trait values.
 }

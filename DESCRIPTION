@@ -1,27 +1,30 @@
 Package: ShiVa
 Type: Package
-Title: Detection of Evolutionary Shifts in both Optimal Value and Variance
-Version: 1.0.0
+Title: Detection of Evolutionary Shifts in Both Optimal Value and Variance
+Version: 1.0.1
 Authors@R: 
     c(person("Wensha", "Zhang", email = "wn209685@dal.ca", role = c("aut", "cre")),
       person("Lam Si Tung", "Ho", email = "Lam.Ho@dal.ca", role = "aut"),
       person("Toby", "Kenney", email = "tb432381@dal.ca", role = "aut"))
-Description: Abrupt environmental changes can lead to evolutionary shifts in not only mean (optimal value), but also variance of descendants in trait evolution. There are some methods to detect shifts in optimal value but few studies consider the shifts in variance. The main function of this package is to detect the shifts in both variance and optimal value based on minimizing the loss function with L1 penalty.
+Description: This package implements statistical methods for detecting evolutionary shifts 
+    in both the optimal trait value (mean) and evolutionary variance under an Ornstein-Uhlenbeck 
+    model. While several existing methods detect shifts in the optimal value, few consider 
+    shifts in variance. ShiVa uses an L1-penalized optimization framework to identify branches 
+    where shifts occur. The method includes support for measurement error. For details, see <arXiv:2312.17480>.
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Depends: 
-	R (>= 3.6.0)
+    R (>= 3.6.0)
 Imports:
-	glmnet,
-	PIGShift,
-	psych,
-	ape,
-	igraph,
-	stats,
+    glmnet,
+    psych,
+    ape,
+    phylolm,
+    MASS,
+    igraph
 Suggests:
-	MASS,
-	knitr,
-	rmarkdown 
+    knitr,
+    rmarkdown
 VignetteBuilder: knitr
-RoxygenNote: 7.2.1
+RoxygenNote: 7.3.2
