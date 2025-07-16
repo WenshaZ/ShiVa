@@ -7,7 +7,7 @@
 summary_shifts(result)
 }
 \arguments{
-\item{result}{A list returned by the \code{ShiVa()} function, containing at least \code{best_model} and \code{tree}.}
+\item{result}{A list returned by the \code{ShiVa()} function, containing at least \code{best_model}.}
 }
 \description{
 Print a concise summary of the best model selected by \code{ShiVa()}, including shift locations (edges) and magnitudes, as well as estimated parameters.

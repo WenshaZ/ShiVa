@@ -6,11 +6,11 @@ Authors@R:
     c(person("Wensha", "Zhang", email = "wn209685@dal.ca", role = c("aut", "cre")),
       person("Lam Si Tung", "Ho", email = "Lam.Ho@dal.ca", role = "aut"),
       person("Toby", "Kenney", email = "tb432381@dal.ca", role = "aut"))
-Description: This package implements statistical methods for detecting evolutionary shifts 
-    in both the optimal trait value (mean) and evolutionary variance under an Ornstein-Uhlenbeck 
-    model. While several existing methods detect shifts in the optimal value, few consider 
-    shifts in variance. ShiVa uses an L1-penalized optimization framework to identify branches 
-    where shifts occur. The method includes support for measurement error. For details, see <arXiv:2312.17480>.
+Description: Implements statistical methods for detecting evolutionary shifts
+    in both the optimal trait value (mean) and evolutionary diffusion variance.
+    The method uses an L1-penalized optimization framework to identify branches 
+    where shifts occur, and the shift magnitudes. It also supports the 
+    inclusion of measurement error. For more details, see <doi:10.48550/arXiv.2312.17480>.
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
