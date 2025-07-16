@@ -30,13 +30,3 @@ To install the package from GitHub:
 # install.packages("devtools") # if not already installed
 devtools::install_github("WenshaZ/ShiVa")
 ```
-## Dependencies
-
-ShiVa depends on the following R packages: `ape`, `glmnet`, `psych`, `MASS`
-
-
-To install all dependencies:
-
-```r
-install.packages(c("ape", "glmnet", "psych", "MASS"))
-
