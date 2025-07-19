@@ -40,6 +40,8 @@ fit_OU_mean_var(
 }
 \value{
 A list containing:
+\item{tree}{The phylogenetic tree.}
+\item{Y}{The trait values.}
 \item{shifts_mean}{Indices of branches with non-zero shifts in optimal trait value.}
 \item{shifts_var}{Indices of branches with non-zero shifts in evolutionary variance.}
 \item{beta}{Estimated shift magnitudes for optima values.}

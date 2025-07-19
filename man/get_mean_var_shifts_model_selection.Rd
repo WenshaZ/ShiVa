@@ -17,7 +17,8 @@ get_mean_var_shifts_model_selection(
   top_k = 10,
   measurement_error = FALSE,
   lambda.type = "lambda.1se",
-  max.num.shifts = Inf
+  max.num.shifts = Inf,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -46,6 +47,8 @@ get_mean_var_shifts_model_selection(
 \item{lambda.type}{A character string specifying the cross-validation rule used to select \code{lambda1} from \code{lambda1_list}. Options are \code{"lambda.min"} (minimum CV error) and \code{"lambda.1se"} (1-SE rule, higher penalty). Default is \code{"lambda.1se"}.}
 
 \item{max.num.shifts}{An integer specifying the maximum number of allowed shifts (combined across mean and variance). Default is \code{Inf}.}
+
+\item{verbose}{Logical. If \code{TRUE}, prints progress messages to the console. Default is \code{TRUE}.}
 }
 \value{
 A list containing:

@@ -50,10 +50,10 @@ result = ShiVa(Y,tree, lambda.type = "lambda.min")
 
 # Visualize Detected Shifts
 ```{r,fig.height=8,fig.width=8}
-plot_model_shifts(tree,Y,result$best_model,"ShiVa")
+plot(result$best_model,title = "ShiVa")
 ```
 
 # Summarize Shifts
 ```{r}
-summary_shifts(result)
+print(summary(result$best_model))
 ```

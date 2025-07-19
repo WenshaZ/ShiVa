@@ -360,6 +360,8 @@ update_step_gamma <- function(gamma_k, X_k, Sigma, r, lambda2, t, penalty, V, q_
 #' @param max.num.shifts Maximum allowed number of shifts (combined for mean and variance). Default is \code{Inf}.
 #'
 #' @return A list containing:
+#' \item{tree}{The phylogenetic tree.}
+#' \item{Y}{The trait values.}
 #' \item{shifts_mean}{Indices of branches with non-zero shifts in optimal trait value.}
 #' \item{shifts_var}{Indices of branches with non-zero shifts in evolutionary variance.}
 #' \item{beta}{Estimated shift magnitudes for optima values.}
@@ -489,6 +491,7 @@ fit_OU_mean_var = function(tree, Y, alpha, shifts_mean, shifts_var,
     
     result <- list(
         tree = tree,
+        Y = Y,
         shifts_mean = which(beta!=0),
         shifts_var = which(gamma!=0),
         alpha = alpha,
@@ -508,6 +511,8 @@ fit_OU_mean_var = function(tree, Y, alpha, shifts_mean, shifts_var,
         result$sigma2_error <- sigma2_error
     }
     
+    class(result) <- "ShiftModel"
+
     return(result)
 }
 
@@ -596,6 +601,7 @@ backward_correction = function(tree,Y,alpha,shifts_mean,shifts_var,criterion='BI
 #' @param measurement_error Logical. If \code{TRUE}, estimates a separate measurement error variance component. Default is \code{FALSE}.
 #' @param lambda.type A character string specifying the cross-validation rule used to select \code{lambda1} from \code{lambda1_list}. Options are \code{"lambda.min"} (minimum CV error) and \code{"lambda.1se"} (1-SE rule, higher penalty). Default is \code{"lambda.1se"}.
 #' @param max.num.shifts An integer specifying the maximum number of allowed shifts (combined across mean and variance). Default is \code{Inf}.
+#' @param verbose Logical. If \code{TRUE}, prints progress messages to the console. Default is \code{TRUE}.
 #'
 #' @return A list containing:
 #' \item{best_model}{The final selected OU model object, with estimated shifts and parameters.}
@@ -611,7 +617,8 @@ get_mean_var_shifts_model_selection <- function(Y, tree, alpha, t = 0.01,
                                                 nfolds = 8, top_k = 10,
                                                 measurement_error = FALSE,
                                                 lambda.type = "lambda.1se",
-                                                max.num.shifts = Inf
+                                                max.num.shifts = Inf,
+                                                verbose = TRUE
                                                 ) {
 
   top_k = top_k
@@ -634,8 +641,8 @@ get_mean_var_shifts_model_selection <- function(Y, tree, alpha, t = 0.01,
   model_counter <- 1
 
   for (lambda2 in lambda2_list) {
-    cat("====== Model Selection Round", model_counter, "======\n")
-    cat("Trying lambda2 =", lambda2, "...\n")
+    if (verbose) cat("====== Model Selection Round", model_counter, "======\n")
+    if (verbose) cat("Trying lambda2 =", lambda2, "...\n")
 
     ret_pre <- get_mean_var_shifts(Y, tree, alpha, Inf, lambda2, max.steps = max.steps)
     Sigma <- V * ret_pre$sigma2 +
@@ -648,18 +655,18 @@ get_mean_var_shifts_model_selection <- function(Y, tree, alpha, t = 0.01,
     YY <- SqrtInvSigma %*% Y
     XX <- SqrtInvSigma %*% X
     lambda1 <- cv.glmnet(XX, YY, lambda = lambda1_list, intercept = FALSE, nfolds = nfolds)[[lambda.type]]
-    cat("Selected lambda1 from CV:", lambda1, "\n")
+    if (verbose) cat("Selected lambda1 from CV:", lambda1, "\n")
 
     ret <- get_mean_var_shifts(Y, tree, alpha, lambda1, lambda2,
                                t = t, max.steps = max.steps, measurement_error = measurement_error)
 
-    cat("  shifts_mean =", if (length(ret$shifts_mean)) paste(ret$shifts_mean, collapse = ",") else "none", "\n")
-    cat("  shifts_var  =", if (length(ret$shifts_var)) paste(ret$shifts_var, collapse = ",") else "none", "\n")
+    if (verbose) cat("  shifts_mean =", if (length(ret$shifts_mean)) paste(ret$shifts_mean, collapse = ",") else "none", "\n")
+    if (verbose) cat("  shifts_var  =", if (length(ret$shifts_var)) paste(ret$shifts_var, collapse = ",") else "none", "\n")
 
     OModel <- fit_OU_mean_var(tree, Y1, alpha, ret$shifts_mean, ret$shifts_var,
                               t = t, measurement_error = measurement_error,
                                                 max.num.shifts = max.num.shifts)
-    cat("  log-likelihood =", OModel$loglik, "\n\n")
+    if (verbose) cat("  log-likelihood =", OModel$loglik, "\n\n")
 
     score_summary[nrow(score_summary) + 1, ] <- c(lambda1, lambda2,
                                                   paste(ret$shifts_mean, collapse = ';'),
@@ -684,13 +691,13 @@ get_mean_var_shifts_model_selection <- function(Y, tree, alpha, t = 0.01,
                                   'loglik_corrected', 'BIC_corrected',
                                   'mBIC_corrected', 'pBIC_corrected')
 
-  cat("\n====== Backward Correction (Top", top_k, ") ======\n")
+  if (verbose) cat("\n====== Backward Correction (Top", top_k, ") ======\n")
   for (i in 1:min(top_k, nrow(score_summary))) {
     ind <- order(as.numeric(score_summary[[criterion]]))[i]
     shifts_mean <- as.numeric(strsplit(score_summary$shifts_mean[ind], ';')[[1]])
     shifts_var <- as.numeric(strsplit(score_summary$shifts_var[ind], ';')[[1]])
 
-    cat("Correcting model", i, "with shifts_mean =", paste(shifts_mean, collapse = ","),
+    if (verbose) cat("Correcting model", i, "with shifts_mean =", paste(shifts_mean, collapse = ","),
         "shifts_var =", paste(shifts_var, collapse = ","), "...\n")
 
     OModel <- backward_correction(tree, Y1, alpha, shifts_mean, shifts_var, measurement_error = measurement_error,
@@ -711,7 +718,7 @@ get_mean_var_shifts_model_selection <- function(Y, tree, alpha, t = 0.01,
     }
   }
 
-  cat("====== Selection Finished. Best", criterion, "=", best_score, "======\n")
+  if (verbose) cat("====== Selection Finished. Best", criterion, "=", best_score, "======\n")
   return(list('best_model' = best_Model, 'score_summary' = score_summary))
 }
 
@@ -795,7 +802,8 @@ get_prediction_likelihood = function(Y_pred,Sigma,test_data){
 
 
 # Extract shift info from ShiVa-style model
-extract_shifts <- function(model, tree) {
+extract_shifts <- function(model) {
+  tree = model$tree
   edge_nodes <- tree$edge[, 2]
   mean_shifts <- which(model$beta != 0)
   var_shifts <- which(model$gamma != 0)
@@ -820,40 +828,44 @@ extract_shifts <- function(model, tree) {
 
 
 
-#' @title plot_model_shifts
-#' @description Plots a phylogenetic tree with trait values and highlights branches with shifts in mean (green circles) and variance (pink squares).
-#' @param tree A phylogenetic tree of class \code{phylo}.
-#' @param trait A named numeric vector of trait values matching the tree tips.
-#' @param model A fitted ShiVa model.
-#' @param title Title for the plot.
-#' @return A plot showing trait-colored tips and shift annotations.
+#' @title Plot Method for ShiftModel Objects
+#'
+#' @description 
+#' Plots a phylogenetic tree with trait values at the tips and highlights branches with detected shifts in optimal value (mean) and variance.
+#'
+#' @param x An object of class \code{ShiftModel}, typically returned by \code{fit_OU_mean_var()} or \code{ShiVa()}.
+#' @param title A character string specifying the plot title.
+#' @param ... Additional arguments passed to \code{plot.phylo()}.
+#'
+#' @return No return value. This function is called for its side effect: a plotted tree.
+#'
+#' @method plot ShiftModel
 #' @import ape
 #' @importFrom grDevices heat.colors
 #' @importFrom graphics legend
 #' @export
-plot_model_shifts <- function(tree, trait, model, title = "") {
+
+plot.ShiftModel <- function(x, title = "", ...) {
+  tree <- x$tree
+  trait = x$Y
   if (is.null(names(trait)) || length(names(trait)) == 0) {
     names(trait) <- tree$tip.label
   }
 
-  shift_info <- extract_shifts(model, tree)
+  shift_info <- extract_shifts(x)
 
+  plot(tree, show.tip.label = TRUE, main = title, cex = 0.6, ...)
 
-  plot(tree, show.tip.label = TRUE, main = title ,cex = 0.6)
-
-  # Add colored boxes at tip positions
   tiplabels(pch = 15, adj = 0.48,
             col = rev(heat.colors(100))[as.numeric(cut(trait, 100))], 
             cex = 1.5)
 
-  edgelabels("*",shift_info$mean$edge,col = "green", cex = 2,adj = c(0.5,0.8), bg=NULL,frame="none")
-  edgelabels(round(shift_info$mean$size,3),shift_info$mean$edge,adj = c(0.6,-0.5),bg=NULL,frame="none",cex = 0.8, col = "darkgreen")
-  edgelabels("*",shift_info$var$edge,col = "red",cex = 2,adj = c(0.5,0.8), bg=NULL,frame="none")
-  edgelabels(round(shift_info$var$size,3),shift_info$var$edge,adj = c(0.6,-0.5),bg=NULL,frame="none", cex = 0.8, col = "darkred")
+  edgelabels("*", shift_info$mean$edge, col = "green", cex = 2, adj = c(0.5, 0.8), frame = "none")
+  edgelabels(round(shift_info$mean$size, 3), shift_info$mean$edge, adj = c(0.6, -0.5), frame = "none", cex = 0.8, col = "darkgreen")
 
+  edgelabels("*", shift_info$var$edge, col = "red", cex = 2, adj = c(0.5, 0.8), frame = "none")
+  edgelabels(round(shift_info$var$size, 3), shift_info$var$edge, adj = c(0.6, -0.5), frame = "none", cex = 0.8, col = "darkred")
 
-
-  # Add model summary
   legend("topright", legend = c(
     paste0("sigma2 = ", shift_info$sigma2),
     paste0("alpha = ", shift_info$alpha),
@@ -863,42 +875,83 @@ plot_model_shifts <- function(tree, trait, model, title = "") {
 }
 
 
-#' @title Summary of Shifts from a ShiVa Model Result
-#' @description Print a concise summary of the best model selected by \code{ShiVa()}, including shift locations (edges) and magnitudes, as well as estimated parameters.
+#' @title Summary of a ShiVa Shift Model
+#' @description Generate a summary of a fitted ShiVa model object, including estimated parameters and details of detected shifts in optimal trait value (mean) and evolutionary variance.
 #'
-#' @param result A list returned by the \code{ShiVa()} function, containing at least \code{best_model}.
+#' @param object An object of class \code{ShiftModel}, typically returned by functions such as \code{fit_OU_mean_var()}, or extracted as \code{best_model} from \code{get_mean_var_shifts_model_selection()} or \code{ShiVa()}.
+#' @param ... Additional arguments (currently unused).
 #'
+#' @return An object of class \code{summary.ShiftModel}, which includes:
+#' \itemize{
+#'   \item \code{alpha}: Estimated selection strength parameter.
+#'   \item \code{sigma2}: Estimated diffusion variance.
+#'   \item \code{loglik}: Log-likelihood of the fitted model.
+#'   \item \code{BIC}: Bayesian Information Criterion.
+#'   \item \code{mean_shifts}: A data frame of branches with shifts in optimal value.
+#'   \item \code{var_shifts}: A data frame of branches with shifts in evolutionary variance.
+#' }
+#'
+#' @method summary ShiftModel
 #' @export
-summary_shifts <- function(result) {
-  model <- result$best_model
-  tree <- result$best_model$tree
-  shift_info <- extract_shifts(model, tree)
 
-  cat("Model Summary (ShiVa)\n")
-  cat("---------------------\n")
-  cat("alpha:", shift_info$alpha, "\n")
-  cat("sigma2: ", shift_info$sigma2, "\n")
-  cat("Log-likelihood:", shift_info$loglik, "\n")
-  cat("BIC:", shift_info$BIC, "\n\n")
+summary.ShiftModel <- function(object, ...) {
+  
+  shift_info <- extract_shifts(object)
 
-  if (nrow(shift_info$mean) > 0) {
-    cat("Shifts in Optimal Value:\n")
+  structure(
+    list(
+      alpha = shift_info$alpha,
+      sigma2 = shift_info$sigma2,
+      loglik = shift_info$loglik,
+      BIC = shift_info$BIC,
+      mean_shifts = shift_info$mean,
+      var_shifts = shift_info$var
+    ),
+    class = "summary.ShiVaShiftModel"
+  )
+}
+
+
+#' @title Print Method for Summary of ShiftModel
+#'
+#' @description
+#' Prints a formatted summary of a fitted \code{ShiftModel}, including the estimated parameters (\code{alpha}, \code{sigma2}, log-likelihood, and BIC), 
+#' as well as details of detected shifts in the optimal trait value (mean) and variance. This method is typically called on the result of 
+#' \code{summary()} applied to an object of class \code{ShiftModel}.
+#'
+#' @param x An object of class \code{summary.ShiftModel}, usually returned by \code{summary(model)} where \code{model} is a \code{ShiftModel}.
+#' @param ... Additional arguments (currently ignored).
+#'
+#' @return No return value. Called for its side effect: printing summary information to the console.
+#'
+#' @method print summary.ShiftModel
+#' @export
+print.summary.ShiftModel <- function(x, ...) {
+  cat("ShiVa Model Summary: Shift Detection in Mean and Variance\n")
+  cat("----------------------------------------------------------\n")
+  cat("alpha:", x$alpha, "\n")
+  cat("sigma2:", x$sigma2, "\n")
+  cat("Log-likelihood:", x$loglik, "\n")
+  cat("BIC:", x$BIC, "\n\n")
+
+  if (nrow(x$mean_shifts) > 0) {
+    cat("Shifts in Optimal Value (theta):\n")
     print(data.frame(
-      Edge = shift_info$mean$edge,
-      Node = shift_info$mean$node,
-      Magnitude = round(shift_info$mean$size, 4)
+      Edge = x$mean_shifts$edge,
+      Node = x$mean_shifts$node,
+      Magnitude = round(x$mean_shifts$size, 4)
     ), row.names = FALSE)
     cat("\n")
   } else {
     cat("No shifts in optimal value detected.\n\n")
   }
 
-  if (nrow(shift_info$var) > 0) {
-    cat("Shifts in Variance:\n")
+  if (nrow(x$var_shifts) > 0) {
+    cat("Shifts in Variance (sigma^2):\n")
     print(data.frame(
-      Edge = shift_info$var$edge,
-      Node = shift_info$var$node,
-      Magnitude = round(shift_info$var$size, 4)
+      Edge = x$var_shifts$edge,
+      Node = x$var_shifts$node,
+      Magnitude = round(x$var_shifts$size, 4)
     ), row.names = FALSE)
     cat("\n")
   } else {
