@@ -1,7 +1,7 @@
 Package: ShiVa
 Type: Package
 Title: Detection of Evolutionary Shifts in Both Optimal Value and Variance
-Version: 1.0.1
+Version: 1.0.2
 Authors@R: 
     c(person("Wensha", "Zhang", email = "wn209685@dal.ca", role = c("aut", "cre")),
       person("Lam Si Tung", "Ho", email = "Lam.Ho@dal.ca", role = "aut"),

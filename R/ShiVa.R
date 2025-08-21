@@ -433,7 +433,10 @@ fit_OU_mean_var = function(tree, Y, alpha, shifts_mean, shifts_var,
         
         logdet <- 2 * sum(log(diag(cholSigma)))
         InvSigma_r <- backsolve(cholSigma, forwardsolve(t(cholSigma), r))
-        0.5 * (n * log(2 * pi) + logdet + sum(r * InvSigma_r))
+        nll <- 0.5 * (n * log(2 * pi) + 2 * logdet + sum(r * InvSigma_r))
+        if (!is.finite(nll)) return(1e10)
+
+        return(nll)
     }
     
     opt_result <- optim(par = par0, fn = nll_fn, method = "L-BFGS-B", control = list(maxit = max.steps))

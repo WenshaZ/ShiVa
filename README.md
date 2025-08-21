@@ -1,6 +1,6 @@
 # ShiVa: Detection of Evolutionary Shifts in both Optimal Value and Variance
 
-**Version:** 1.0.1  
+**Version:** 1.0.2  
 **Authors:**  
 - Wensha Zhang <wn209685@dal.ca>  
 - Lam Si Tung Ho <Lam.Ho@dal.ca>  

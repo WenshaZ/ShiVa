@@ -1,5 +1,5 @@
 ---
-title: "ShiVa Example: Detecting Evolutionary Shifts in Mean and Variance"
+title: "ShiVa Example"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{ShiVa Example}
