@@ -7,14 +7,13 @@
 soft_thresholding(z, lambda)
 }
 \arguments{
-\item{z}{A numeric value to be thresholded.}
+\item{z}{Numeric value.}
 
-\item{lambda}{A non-negative numeric value indicating the threshold level (degree of shrinkage).}
+\item{lambda}{Threshold level.}
 }
 \value{
-A numeric value after applying soft thresholding:
-\eqn{\text{sign}(z) \cdot \max(|z| - \lambda, 0)}.
+Thresholded value.
 }
 \description{
-Applies the soft thresholding operation to a numeric input, commonly used in Lasso and sparse modeling to induce shrinkage and sparsity.
+Soft Thresholding
 }

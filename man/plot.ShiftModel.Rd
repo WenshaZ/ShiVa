@@ -7,15 +7,15 @@
 \method{plot}{ShiftModel}(x, title = "", ...)
 }
 \arguments{
-\item{x}{An object of class \code{ShiftModel}, typically returned by \code{fit_OU_mean_var()} or \code{ShiVa()}.}
+\item{x}{A ShiftModel object.}
 
-\item{title}{A character string specifying the plot title.}
+\item{title}{Plot title.}
 
-\item{...}{Additional arguments passed to \code{plot.phylo()}.}
+\item{...}{Additional arguments passed to plot.phylo.}
 }
 \value{
-No return value. This function is called for its side effect: a plotted tree.
+No return value (side effect: plot).
 }
 \description{
-Plots a phylogenetic tree with trait values at the tips and highlights branches with detected shifts in optimal value (mean) and variance.
+Plots a phylogenetic tree with detected shifts highlighted.
 }

@@ -2,42 +2,42 @@
 % Please edit documentation in R/ShiVa.R
 \name{backward_correction}
 \alias{backward_correction}
-\title{Backward Selection for OU Model Shift Correction}
+\title{Backward Selection for Shift Correction}
 \usage{
 backward_correction(
   tree,
   Y,
   alpha,
-  shifts_mean,
-  shifts_var,
+  sv_mean,
+  sv_var,
   criterion = "BIC",
   original_model = NULL,
   measurement_error = FALSE,
-  max.num.shifts = Inf
+  verbose = FALSE
 )
 }
 \arguments{
-\item{tree}{A phylogenetic tree of class \code{phylo}.}
+\item{tree}{Phylogenetic tree.}
 
-\item{Y}{A numeric vector of trait values corresponding to the tips of the tree.}
+\item{Y}{Trait values.}
 
-\item{alpha}{A non-negative numeric value specifying the strength of selection in the OU process.}
+\item{alpha}{Selection strength.}
 
-\item{shifts_mean}{A vector of branch indices with candidate shifts in optimal trait values.}
+\item{sv_mean}{Mean shift branches.}
 
-\item{shifts_var}{A vector of branch indices with candidate shifts in evolutionary variance.}
+\item{sv_var}{Variance shift branches.}
 
-\item{criterion}{A model selection criterion to guide backward elimination. Options include \code{"BIC"}, \code{"mBIC"}, or \code{"pBIC"}. Default is \code{"BIC"}.}
+\item{criterion}{\code{"BIC"}, \code{"mBIC"}, or \code{"pBIC"}.}
 
-\item{original_model}{(Optional) A previously fitted OU model returned by \code{fit_OU_mean_var}. If \code{NULL}, the model is refit using the provided shifts.}
+\item{original_model}{Optional pre-fitted model.}
 
-\item{measurement_error}{Logical. If \code{TRUE}, the model accounts for measurement error by estimating an additional variance term. Default is \code{FALSE}.}
+\item{measurement_error}{Logical.}
 
-\item{max.num.shifts}{An integer specifying the maximum number of total shifts (mean and variance combined) allowed in the model. Default is \code{Inf}.}
+\item{verbose}{Logical.}
 }
 \value{
-A fitted OU model object (a list), as returned by \code{fit_OU_mean_var}, with a potentially reduced set of shifts that minimizes the specified criterion.
+Refined model.
 }
 \description{
-Performs backward stepwise selection on a given set of candidate shifts in optimal trait values (mean) and evolutionary variance under an Ornstein-Uhlenbeck (OU) model. This function iteratively removes individual shifts to improve model fit based on a specified selection criterion.
+Backward Selection for Shift Correction
 }

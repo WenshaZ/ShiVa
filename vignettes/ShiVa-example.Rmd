@@ -44,7 +44,7 @@ tree$edge.length = flowerTree$edge.length/max(node.depth.edgelength(flowerTree))
 # Run ShiVa
 ```{r}
 set.seed(111)
-result = ShiVa(Y,tree, lambda.type = "lambda.min")
+result = ShiVa(Y, tree)
 
 ```
 

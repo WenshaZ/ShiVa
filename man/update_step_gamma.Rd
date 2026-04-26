@@ -7,29 +7,27 @@
 update_step_gamma(gamma_k, X_k, Sigma, r, lambda2, t, penalty, V, q_k)
 }
 \arguments{
-\item{gamma_k}{Current value of the \code{gamma_k} parameter to be updated.}
+\item{gamma_k}{Current gamma value.}
 
-\item{X_k}{The \eqn{k}th column of the design matrix \code{X}.}
+\item{X_k}{Column of design matrix.}
 
 \item{Sigma}{Current covariance matrix.}
 
-\item{r}{Residual vector, typically \code{Y - X \%*\% beta}.}
+\item{r}{Residual vector.}
 
-\item{lambda2}{Non-negative tuning parameter controlling the degree of L1 shrinkage applied to \code{gamma_k}.}
+\item{lambda2}{Penalty parameter.}
 
-\item{t}{Step size for the gradient update.}
+\item{t}{Step size.}
 
-\item{penalty}{Penalty type; either \code{"L1"} for soft thresholding or \code{"None"} for unpenalized updates.}
+\item{penalty}{\code{"L1"} or \code{"None"}.}
 
-\item{V}{Baseline covariance matrix when \eqn{\sigma^2 = 1}.}
+\item{V}{Baseline covariance matrix.}
 
-\item{q_k}{The \eqn{k}th element of the design vector \code{q}, used in the update.}
+\item{q_k}{Element of design vector q.}
 }
 \value{
-A list containing:
-\item{gamma_k}{The updated value of \code{gamma_k}.}
-\item{Sigma}{The updated covariance matrix \code{Sigma}.}
+List with updated gamma_k and Sigma.
 }
 \description{
-Performs one update step for the \code{gamma_k} parameter in an iterative optimization routine, potentially applying L1 shrinkage.
+Update Step for Gamma
 }

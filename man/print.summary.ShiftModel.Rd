@@ -7,15 +7,13 @@
 \method{print}{summary.ShiftModel}(x, ...)
 }
 \arguments{
-\item{x}{An object of class \code{summary.ShiftModel}, usually returned by \code{summary(model)} where \code{model} is a \code{ShiftModel}.}
+\item{x}{A summary.ShiftModel object.}
 
-\item{...}{Additional arguments (currently ignored).}
+\item{...}{Unused.}
 }
 \value{
-No return value. Called for its side effect: printing summary information to the console.
+No return value (side effect: console output).
 }
 \description{
-Prints a formatted summary of a fitted \code{ShiftModel}, including the estimated parameters (\code{alpha}, \code{sigma2}, log-likelihood, and BIC), 
-as well as details of detected shifts in the optimal trait value (mean) and variance. This method is typically called on the result of 
-\code{summary()} applied to an object of class \code{ShiftModel}.
+Print Method for Summary of ShiftModel
 }

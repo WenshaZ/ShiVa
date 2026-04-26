@@ -10,48 +10,47 @@ ShiVa(
   alpha = NULL,
   t = 0.01,
   lambda1_list = NULL,
-  lambda2_list = exp(1:10 * 0.4 - 6),
+  lambda2_list = exp(1:10 - 6),
   criterion = "BIC",
   max.steps = 300,
-  nfolds = 8,
-  top_k = 10,
+  nfolds = 5,
+  top_k = 3,
   measurement_error = FALSE,
-  lambda.type = "lambda.1se",
-  max.num.shifts = Inf
+  refit_alpha = TRUE,
+  verbose = FALSE
 )
 }
 \arguments{
-\item{Y}{A numeric vector of trait values at the tips of the phylogenetic tree.}
+\item{Y}{Trait values at tips.}
 
-\item{tree}{A phylogenetic tree of class \code{phylo}.}
+\item{tree}{Phylogenetic tree of class \code{phylo}.}
 
-\item{alpha}{(Optional) A non-negative numeric value specifying the OU selection strength. If \code{NULL}, it is estimated via maximum likelihood using \code{phylolm()}.}
+\item{alpha}{Selection strength. If \code{NULL}, estimated via \code{phylolm}.}
 
-\item{t}{Step size for optimization. Default is 0.01.}
+\item{t}{Step size. Default 0.01.}
 
-\item{lambda1_list}{A numeric vector of candidate \eqn{\lambda_1} values for penalizing mean shifts.}
+\item{lambda1_list}{Candidate lambda1 values.}
 
-\item{lambda2_list}{A numeric vector of candidate \eqn{\lambda_2} values for penalizing variance shifts. Default is \code{exp(1:10 * 0.4 - 6)}.}
+\item{lambda2_list}{Candidate lambda2 values. Default \code{exp(1:10 - 6)}.}
 
-\item{criterion}{Model selection criterion to use. Options are \code{"BIC"}, \code{"mBIC"}, or \code{"pBIC"}. Default is \code{"BIC"}.}
+\item{criterion}{\code{"BIC"}, \code{"mBIC"}, or \code{"pBIC"}. Default \code{"BIC"}.}
 
-\item{max.steps}{Maximum number of optimization steps. Default is 300.}
+\item{max.steps}{Max iterations. Default 300.}
 
-\item{nfolds}{Number of folds for cross-validation in tuning \code{lambda1}. Default is 8.}
+\item{nfolds}{CV folds. Default 8.}
 
-\item{top_k}{Number of top candidate models (based on criterion) to refine using backward correction. Default is 10.}
+\item{top_k}{Top candidates for backward correction. Default 10.}
 
-\item{measurement_error}{Logical. If \code{TRUE}, estimates a measurement error variance term. Default is \code{FALSE}.}
+\item{measurement_error}{Logical. Default FALSE.}
 
-\item{lambda.type}{Cross-validation rule for selecting \code{lambda1}. Options are \code{"lambda.min"} or \code{"lambda.1se"}. Default is \code{"lambda.1se"}.}
+\item{refit_alpha}{Logical. If TRUE, refit alpha after detection. Default TRUE.}
 
-\item{max.num.shifts}{Maximum number of allowed shifts (in both mean and variance). Default is \code{Inf}.}
+\item{verbose}{Logical. Default FALSE.}
 }
 \value{
-A list with the same structure as \code{get_mean_var_shifts_model_selection}:
-\item{best_model}{The final selected OU model object.}
-\item{score_summary}{A data frame summarizing candidate models and backward-corrected scores.}
+List with best_model and score_summary.
 }
 \description{
-Performs automatic detection of evolutionary shifts in both optimal trait values (mean) and diffusion variance under an Ornstein-Uhlenbeck (OU) process. This function serves as a wrapper for \code{get_mean_var_shifts_model_selection}, with the added ability to automatically estimate the selection strength parameter \code{alpha} if not provided.
+Detects evolutionary shifts in both optimal trait values and diffusion variance
+under an Ornstein-Uhlenbeck process. Optionally refits alpha after shift detection.
 }

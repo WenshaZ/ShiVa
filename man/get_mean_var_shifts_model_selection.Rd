@@ -2,59 +2,48 @@
 % Please edit documentation in R/ShiVa.R
 \name{get_mean_var_shifts_model_selection}
 \alias{get_mean_var_shifts_model_selection}
-\title{Model Selection for OU Shifts in Optimal value and Variance}
+\title{Model Selection for Shifts in Mean and Variance}
 \usage{
 get_mean_var_shifts_model_selection(
   Y,
   tree,
   alpha,
-  t = 0.01,
   lambda1_list = NULL,
-  lambda2_list = exp(1:10 * 0.4 - 6),
+  lambda2_list = exp(1:10 - 6),
   criterion = "BIC",
   max.steps = 300,
-  nfolds = 8,
-  top_k = 10,
+  nfolds = 5,
+  top_k = 3,
   measurement_error = FALSE,
-  lambda.type = "lambda.1se",
-  max.num.shifts = Inf,
-  verbose = TRUE
+  verbose = FALSE
 )
 }
 \arguments{
-\item{Y}{A numeric vector of trait values for the species at the tips of the phylogenetic tree.}
+\item{Y}{Trait values.}
 
-\item{tree}{A phylogenetic tree of class \code{phylo}.}
+\item{tree}{Phylogenetic tree.}
 
-\item{alpha}{A non-negative numeric value representing the selection strength in the OU process.}
+\item{alpha}{Selection strength.}
 
-\item{t}{Step size for iterative optimization. Default is 0.01.}
+\item{lambda1_list}{Candidate lambda1 values.}
 
-\item{lambda1_list}{A numeric vector of candidate \eqn{\lambda_1} values controlling shrinkage for shifts in optimal values.}
+\item{lambda2_list}{Candidate lambda2 values.}
 
-\item{lambda2_list}{A numeric vector of candidate \eqn{\lambda_2} values controlling shrinkage for shifts in variance. Default is exp(1:10*0.4-6)}
+\item{criterion}{\code{"BIC"}, \code{"mBIC"}, or \code{"pBIC"}.}
 
-\item{criterion}{Model selection criterion to optimize. Options include \code{"BIC"}, \code{"mBIC"}, or \code{"pBIC"}. Default is \code{"BIC"}.}
+\item{max.steps}{Max iterations.}
 
-\item{max.steps}{Maximum number of optimization steps. Default is 300.}
+\item{nfolds}{CV folds.}
 
-\item{nfolds}{Number of cross-validation folds for tuning \code{lambda1}. Default is 8.}
+\item{top_k}{Top candidates for backward correction.}
 
-\item{top_k}{Number of top candidate models (ranked by criterion) to further refine using backward correction. Default is 10.}
+\item{measurement_error}{Logical.}
 
-\item{measurement_error}{Logical. If \code{TRUE}, estimates a separate measurement error variance component. Default is \code{FALSE}.}
-
-\item{lambda.type}{A character string specifying the cross-validation rule used to select \code{lambda1} from \code{lambda1_list}. Options are \code{"lambda.min"} (minimum CV error) and \code{"lambda.1se"} (1-SE rule, higher penalty). Default is \code{"lambda.1se"}.}
-
-\item{max.num.shifts}{An integer specifying the maximum number of allowed shifts (combined across mean and variance). Default is \code{Inf}.}
-
-\item{verbose}{Logical. If \code{TRUE}, prints progress messages to the console. Default is \code{TRUE}.}
+\item{verbose}{Logical. Default FALSE.}
 }
 \value{
-A list containing:
-\item{best_model}{The final selected OU model object, with estimated shifts and parameters.}
-\item{score_summary}{A data frame summarizing the model selection results, including pre- and post-correction scores and shift locations.}
+List with best_model and score_summary.
 }
 \description{
-Performs model selection to estimate the locations and magnitudes of evolutionary shifts in optimal trait values (mean) and diffusion variance under an Ornstein-Uhlenbeck (OU) process. This function searches across user-defined grids of shrinkage parameters for both types of shifts, uses cross-validation for selecting \code{lambda1}, and applies backward correction to refine top candidate models.
+Model Selection for Shifts in Mean and Variance
 }

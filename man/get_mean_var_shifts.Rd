@@ -2,7 +2,7 @@
 % Please edit documentation in R/ShiVa.R
 \name{get_mean_var_shifts}
 \alias{get_mean_var_shifts}
-\title{Estimate Shifts in Optimal Trait Values and Variance}
+\title{Estimate Shifts in Mean and Variance (LASSO)}
 \usage{
 get_mean_var_shifts(
   Y,
@@ -15,42 +15,38 @@ get_mean_var_shifts(
   penalty = "L1",
   thres = 0.01,
   sigma2 = NULL,
-  measurement_error = FALSE
+  measurement_error = FALSE,
+  verbose = FALSE
 )
 }
 \arguments{
-\item{Y}{A numeric vector of continuous trait values for the species at the tips of the tree.}
+\item{Y}{Trait values.}
 
-\item{tree}{A phylogenetic tree of class \code{phylo}.}
+\item{tree}{Phylogenetic tree.}
 
-\item{alpha}{The selection strength parameter in the OU process.}
+\item{alpha}{Selection strength.}
 
-\item{lambda1}{Non-negative penalty for \eqn{\beta} (shifts in optimal trait values).}
+\item{lambda1}{Penalty for mean shifts.}
 
-\item{lambda2}{Non-negative penalty for \eqn{\gamma} (shifts in evolutionary variance).}
+\item{lambda2}{Penalty for variance shifts.}
 
-\item{max.steps}{Maximum number of optimization steps. Default is 1000.}
+\item{max.steps}{Max iterations.}
 
-\item{t}{Step size for the gradient-based updates. Default is 0.01.}
+\item{t}{Step size.}
 
-\item{penalty}{Type of penalty to apply. Options are \code{"L1"} (default) or \code{"None"}.}
+\item{penalty}{\code{"L1"} or \code{"None"}.}
 
-\item{thres}{Convergence threshold for the change in loss between steps. Default is 0.01.}
+\item{thres}{Convergence threshold.}
 
-\item{sigma2}{Optional initial value for the base evolutionary variance. If \code{NULL}, it is initialized to 1.}
+\item{sigma2}{Optional initial sigma2.}
 
-\item{measurement_error}{Logical. If \code{TRUE}, the method estimates additional measurement error variance.}
+\item{measurement_error}{Logical.}
+
+\item{verbose}{Print convergence info. Default FALSE.}
 }
 \value{
-A list containing:
-\item{shifts_mean}{Indices of branches with detected shifts in optimal trait values (\eqn{\beta \neq 0}).}
-\item{shifts_var}{Indices of branches with detected shifts in evolutionary variance (\eqn{\gamma \neq 0}).}
-\item{beta}{Estimated shift coefficients for optimal trait values.}
-\item{gamma}{Estimated shift coefficients for evolutionary variance.}
-\item{sigma2}{Estimated base variance (\eqn{\sigma^2}) of the OU process.}
-\item{b0}{Estimated intercept (root state).}
-\item{sigma2_error}{Estimated measurement error variance (only returned if \code{measurement_error = TRUE}).}
+List with detected shifts and parameter estimates.
 }
 \description{
-Estimates shifts in both the optimal trait values (mean) and evolutionary variance along a phylogeny under an Ornstein-Uhlenbeck (OU) process, using an \eqn{\ell_1}-penalized optimization procedure. Optionally accounts for measurement error in the observed trait data.
+L1-penalised estimation of shifts.
 }

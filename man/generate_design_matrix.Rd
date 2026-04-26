@@ -9,13 +9,13 @@ generate_design_matrix(tree, type = "simpX", alpha = 0)
 \arguments{
 \item{tree}{A phylogenetic tree of class \code{phylo}.}
 
-\item{type}{A character string specifying the type of design matrix to generate. Options are \code{"simpX"} or \code{"orgX"}.}
+\item{type}{A character string: \code{"simpX"} or \code{"orgX"}.}
 
-\item{alpha}{The selection strength parameter (only used when \code{type = "orgX"}).}
+\item{alpha}{Selection strength (only for \code{type = "orgX"}).}
 }
 \value{
-A design matrix \code{X}, where each row corresponds to a tip and each column to an edge in the tree.
+A design matrix X.
 }
 \description{
-Constructs a design matrix for a given phylogenetic tree, used in Ornstein-Uhlenbeck modeling.
+Constructs a design matrix for a given phylogenetic tree.
 }

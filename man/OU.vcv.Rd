@@ -9,11 +9,11 @@ OU.vcv(tree, alpha)
 \arguments{
 \item{tree}{phylogenetic tree}
 
-\item{alpha}{selective force}
+\item{alpha}{selection strength}
 }
 \value{
-\item{V}{covariance matrix}
+Covariance matrix V.
 }
 \description{
-generate covariance matrix for OU process
+Generate covariance matrix for OU process.
 }
