@@ -38,7 +38,7 @@ OU.vcv = function(tree, alpha) {
 #' @export
 #' @importFrom igraph graph.edgelist get.shortest.paths
 generate_design_matrix = function(tree, type = "simpX", alpha = 0) {
-  stopifnot(is.ultrametric(tree))
+  stopifnot(is.ultrametric(tree, tol = 0.001, option = 2))
   stopifnot(sum(1:length(tree$tip.label) %in% tree$edge[, 1]) == 0)
   nTips = length(tree$tip.label)
   rNode = nTips + 1
@@ -91,144 +91,151 @@ soft_thresholding = function(z, lambda) {
 #' @export
 #' @importFrom psych tr
 update_step_gamma = function(gamma_k, X_k, Sigma, r, lambda2, t, penalty, V, q_k) {
-  XXT = (X_k %*% t(X_k))
+  XXT = X_k %*% t(X_k)
   M_k = XXT * V
-  InvSigma = solve(Sigma, tol = exp(-100))
-  InvSigmar = InvSigma %*% r
-  delta = -1/2 * (t(InvSigmar) %*% M_k %*% InvSigmar) -
-          1/2 * q_k * (t(X_k) %*% InvSigmar)^2 +
-          1/2 * tr(M_k %*% InvSigma) +
-          1/2 * q_k * (t(X_k) %*% InvSigma %*% X_k)
-  new_value = -Inf
-  while (min(diag(Sigma)[X_k != 0]) + (new_value - gamma_k) * (q_k + V[1, 1]) < 0) {
-    z = (gamma_k - t * delta)[1]
-    if (penalty == "L1") {
-      new_value = soft_thresholding(z, lambda2)
-    } else if (penalty == "None") {
-      new_value = z
-    }
-    t = t * 0.5
-    if (t < exp(-10)) {
-      new_value = gamma_k
-      break
-    }
+
+  chol_result = tryCatch(chol(Sigma), error = function(e) NULL)
+  if (is.null(chol_result)) {
+    warning("Cholesky failed: skipping gamma update.")
+    return(list(gamma_k = gamma_k, Sigma = Sigma))
   }
-  Sigma = Sigma + (new_value - gamma_k) * M_k + (new_value - gamma_k) * q_k * XXT
+  InvSigma = chol2inv(chol_result)
+  InvSigmar = InvSigma %*% r
+
+  delta = -0.5 * (t(InvSigmar) %*% M_k %*% InvSigmar) -
+          0.5 * q_k * (t(X_k) %*% InvSigmar)^2 +
+          0.5 * tr(M_k %*% InvSigma) +
+          0.5 * q_k * (t(X_k) %*% InvSigma %*% X_k)
+  delta = as.numeric(delta)
+
+  if (abs(delta) < 1e-6 || !is.finite(delta)) {
+    return(list(gamma_k = gamma_k, Sigma = Sigma))
+  }
+
+  z = gamma_k - t * delta
+  new_value = if (penalty == "L1") soft_thresholding(z, lambda2) else z
+  new_value = max(0, min(new_value, 10))
+
+  for (i in 1:5) {
+    diag_shift = (new_value - gamma_k) * (q_k + V[1, 1])
+    if (all(diag(Sigma)[X_k != 0] + diag_shift > 0)) break
+    t = t * 0.5
+    z = gamma_k - t * delta
+    new_value = if (penalty == "L1") soft_thresholding(z, lambda2) else z
+    new_value = max(0, min(new_value, 10))
+  }
+
+  Sigma = Sigma + (new_value - gamma_k) * (M_k + q_k * XXT)
   return(list(gamma_k = new_value, Sigma = Sigma))
 }
 
 #' @title Fit OU Model with Shifts in Mean and Variance
-#' @description Refit with known shift locations. Uses iterative coordinate descent.
+#' @description Refit with known shift locations using \code{optim} (L-BFGS-B).
 #' @param tree Phylogenetic tree.
 #' @param Y Trait values.
 #' @param alpha Selection strength.
 #' @param sv_mean Branch indices with mean shifts.
 #' @param sv_var Branch indices with variance shifts.
 #' @param max.steps Max iterations. Default 1000.
-#' @param t Step size. Default 0.01.
-#' @param thres Convergence threshold. Default 0.01.
+#' @param t Step size (unused; kept for backward compatibility).
+#' @param thres Convergence threshold (unused; kept for backward compatibility).
 #' @param measurement_error Logical.
+#' @param max.num.shifts Maximum number of shifts. Default \code{Inf}.
 #' @param verbose Print convergence info. Default FALSE.
 #' @return Fitted model list.
 #' @export
 #' @import ape
-#' @importFrom stats coef lm
+#' @importFrom stats optim
 fit_OU_mean_var = function(tree, Y, alpha, sv_mean, sv_var,
                             max.steps = 1000, t = 0.01, thres = 0.01,
-                            measurement_error = FALSE, verbose = FALSE) {
-  X = generate_design_matrix(tree, 'simpX')
-  V = if (alpha == 0) vcv(tree) else OU.vcv(tree, alpha)
+                            measurement_error = FALSE, max.num.shifts = Inf,
+                            verbose = FALSE) {
+  X = generate_design_matrix(tree, "simpX")
   n = nrow(X); p = ncol(X)
+
+  max.num.shifts = min(max.num.shifts, p)
+  if (length(sv_mean) > max.num.shifts || length(sv_var) > max.num.shifts) {
+    return(list(loglik = -Inf, BIC = Inf, mBIC = Inf, pBIC = Inf))
+  }
+
+  V = if (alpha == 0) vcv(tree) else OU.vcv(tree, alpha)
   tb = node.depth.edgelength(tree)[tree$edge[, 1]]
   q = exp(-2*alpha*max(node.depth.edgelength(tree))) / (2*alpha) * (1 - exp(2*alpha*tb))
 
-  loglik = Inf; sigma2_0 = 1
-  sigma2_error = if (measurement_error) 1 else 0
-  tau_0 = log(sigma2_0); tau_error = log(sigma2_error)
-  b0 = 0; beta = rep(0, p); gamma = rep(0, p); r = Y
-  Sigma = V*sigma2_0 + (X %*% diag(gamma) %*% t(X))*V + X %*% diag(gamma*q) %*% t(X) +
-          sigma2_error * diag(1, n)
-  InvSigma = solve(Sigma)
+  par0 = c(rep(0, length(sv_mean)), rep(0, length(sv_var)), 0, log(1))
+  if (measurement_error) par0 = c(par0, log(1))
 
-  for (s in 1:max.steps) {
-    last_loglik = loglik; last_tau = tau_0; last_tau_error = tau_error
-    last_gamma = gamma; last_beta = beta; last_b0 = b0
-
-    # update beta (OLS on whitened data)
-    svd_result = svd(InvSigma)
-    SqrtInvSigma = svd_result$u %*% diag(sqrt(svd_result$d)) %*% t(svd_result$v)
-    YY = SqrtInvSigma %*% Y
-    if (length(sv_mean) > 0) {
-      XX = SqrtInvSigma %*% X[, sv_mean]
-      beta[sv_mean] = coef(lm(YY ~ XX))[-1]
-      beta[is.na(beta)] = 0
-    }
-    r = Y - X %*% beta - b0
-
-    # update b0
-    tmp = t(rep(1, n)) %*% InvSigma
-    b0 = as.vector((tmp %*% (r + b0)) / (tmp %*% rep(1, n)))
-    r = r - (b0 - last_b0)
-
-    # update gamma
-    for (k in sv_var) {
-      result = update_step_gamma(gamma[k], X[, k], Sigma, r, 0, t, penalty = 'None', V, q[k])
-      gamma[k] = result[['gamma_k']]
-      Sigma = result[['Sigma']]
-    }
-
-    # update sigma0
-    InvSigma = solve(Sigma, tol = exp(-100))
-    InvSigmar = InvSigma %*% r
-    tau_delta = (-1/2*t(InvSigmar) %*% V %*% InvSigmar + 1/2*tr(V %*% InvSigma)) * exp(tau_0)
-    tau_0 = (last_tau - t*tau_delta)[1]
-    Sigma = Sigma + (exp(tau_0) - exp(last_tau)) * V
-    InvSigma = solve(Sigma, tol = exp(-100))
-    InvSigmar = InvSigma %*% r
-
-    if (measurement_error) {
-      tau_error_delta = (-1/2*t(InvSigmar) %*% InvSigmar + 1/2*tr(InvSigma)) * exp(tau_error)
-      tau_error = (last_tau_error - t*tau_error_delta)[1]
-      Sigma = Sigma + (exp(tau_error) - exp(last_tau_error)) * diag(1, n)
-      InvSigma = solve(Sigma)
-    }
-
-    loglik = -1/2*(n*log(2*pi) + t(r) %*% (InvSigma %*% r) + determinant(Sigma)$modulus)
-
-    if (is.na(loglik) || is.nan(loglik)) {
-      if (verbose) warning("NaN loglik at step ", s)
-      break
-    }
-    if (((abs(loglik) != Inf) & (abs(loglik - last_loglik) < thres)) | loglik == -Inf) {
-      if (verbose) cat(s, "steps to converge\n")
-      break
-    }
+  nll_fn = function(par) {
+    m = length(sv_mean); v = length(sv_var)
+    beta = rep(0, p); gamma = rep(0, p)
+    if (m > 0) beta[sv_mean] = par[1:m]
+    if (v > 0) gamma[sv_var] = par[(m+1):(m+v)]
+    b0 = par[m + v + 1]
+    sigma2 = exp(par[m + v + 2])
+    sigma2_error = if (measurement_error) exp(par[m + v + 3]) else 0
+    mu = X %*% beta + b0
+    r = Y - mu
+    Sigma = V*sigma2 + (X %*% diag(gamma) %*% t(X))*V + X %*% diag(gamma*q) %*% t(X) +
+            sigma2_error * diag(n)
+    cholSigma = tryCatch(chol(Sigma), error = function(e) NULL)
+    if (is.null(cholSigma)) return(1e10)
+    logdet = 2 * sum(log(diag(cholSigma)))
+    InvSigma_r = backsolve(cholSigma, forwardsolve(t(cholSigma), r))
+    0.5 * (n*log(2*pi) + logdet + sum(r * InvSigma_r))
   }
 
-  sigma2_0 = exp(tau_0)
-  sigma2_error = exp(tau_error)
-  Sigma = V*sigma2_0 + (X %*% diag(gamma) %*% t(X))*V + X %*% diag(gamma*q) %*% t(X) +
-          sigma2_error * diag(1, n)
+  opt_result = optim(par = par0, fn = nll_fn, method = "L-BFGS-B",
+                     control = list(maxit = max.steps))
+  opt_par = opt_result$par
+  m = length(sv_mean); v = length(sv_var)
+
+  beta = rep(0, p); gamma = rep(0, p)
+  if (m > 0) beta[sv_mean] = opt_par[1:m]
+  if (v > 0) gamma[sv_var] = opt_par[(m+1):(m+v)]
+  b0 = opt_par[m + v + 1]
+  sigma2 = exp(opt_par[m + v + 2])
+  sigma2_error = if (measurement_error) exp(opt_par[m + v + 3]) else 0
+
+  mu = X %*% beta + b0
+  r = Y - mu
+  Sigma = V*sigma2 + (X %*% diag(gamma) %*% t(X))*V + X %*% diag(gamma*q) %*% t(X) +
+          sigma2_error * diag(n)
   InvSigma = solve(Sigma, tol = exp(-100))
-  BIC = -2*loglik + log(n)*(2*sum(beta != 0) + 2*sum(gamma != 0) + 3)
+  loglik = -nll_fn(opt_par)
 
-  logn_mean = if (length(sv_mean) > 1) sum(log(colSums(X[, sv_mean])))
+  k_beta = sum(beta != 0); k_gamma = sum(gamma != 0)
+  BIC = -2*loglik + log(n)*(2*k_beta + 2*k_gamma + 3)
+
+  logn_mean = if (length(sv_mean) > 1) sum(log(colSums(X[, sv_mean, drop = FALSE])))
               else if (length(sv_mean) == 1) log(sum(X[, sv_mean])) else 0
-  logn_var = if (length(sv_var) > 1) sum(log(colSums(X[, sv_var])))
+  logn_var = if (length(sv_var) > 1) sum(log(colSums(X[, sv_var, drop = FALSE])))
              else if (length(sv_var) == 1) log(sum(X[, sv_var])) else 0
-  logn0 = if (length(c(sv_mean, sv_var)) == 0) log(n)
-          else if (length(c(sv_mean, sv_var)) == 1) log(n - sum(X[, c(sv_mean, sv_var)] > 0))
-          else if (n - sum(rowSums(X[, c(sv_mean, sv_var)]) > 0) > 0)
-            log(n - sum(rowSums(X[, c(sv_mean, sv_var)]) > 0)) else 0
+  active = c(sv_mean, sv_var)
+  logn0 = if (length(active) == 0) log(n)
+          else if (length(active) == 1) log(n - sum(X[, active] > 0))
+          else {
+            z = rowSums(X[, active, drop = FALSE]) > 0
+            if (sum(z) < n) log(n - sum(z)) else 0
+          }
+  mBIC = -2*loglik + (2*k_beta + 2*k_gamma - 1)*log(n) + logn_mean + logn_var + logn0
 
-  mBIC = -2*loglik + (2*sum(beta != 0) + 2*sum(gamma != 0) - 1)*log(n) + logn_mean + logn_var + logn0
-  pBIC = -2*loglik + (2*sum(beta != 0) + 2*sum(gamma != 0))*log(2*n - 3) + 2*log(n) +
-         determinant(t(cbind(1, X[, sv_mean])) %*% InvSigma %*% cbind(1, X[, sv_mean]))$modulus
+  pBIC = tryCatch({
+    design_matrix = cbind(1, X[, sv_mean, drop = FALSE])
+    Xt_Si_X = t(design_matrix) %*% InvSigma %*% design_matrix
+    logdet_proj = as.numeric(determinant(Xt_Si_X, logarithm = TRUE)$modulus)
+    -2*loglik + 2*(k_beta + k_gamma)*log(2*n - 3) + 2*log(n) + logdet_proj
+  }, error = function(e) Inf)
+
+  if (!is.finite(loglik)) loglik = -Inf
+  if (!is.finite(BIC))    BIC    = Inf
+  if (!is.finite(mBIC))   mBIC   = Inf
+  if (!is.finite(pBIC))   pBIC   = Inf
 
   result = list(tree = tree, Y = Y, alpha = alpha,
-                beta = beta, gamma = gamma, sigma2 = sigma2_0, b0 = b0,
+                shifts_mean = which(beta != 0), shifts_var = which(gamma != 0),
+                beta = beta, gamma = gamma, sigma2 = sigma2, b0 = b0,
                 loglik = loglik, BIC = BIC, mBIC = mBIC, pBIC = pBIC,
-                fitted.values = X %*% beta + b0, Sigma = Sigma)
+                fitted.values = mu, Sigma = Sigma)
   if (measurement_error) result$sigma2_error = sigma2_error
   class(result) <- "ShiftModel"
   return(result)
@@ -256,7 +263,7 @@ get_mean_var_shifts = function(Y, tree, alpha, lambda1, lambda2,
                                 thres = 0.01, sigma2 = NULL,
                                 measurement_error = FALSE, verbose = FALSE) {
   X = generate_design_matrix(tree, type = 'simpX')
-  internal_list = (1:ncol(X))[colSums(X) > 1]
+  internal_list = (1:ncol(X))[colSums(X) > 1 & colSums(X) != (nrow(X) - 1)]
   V = if (alpha == 0) vcv(tree) else OU.vcv(tree, alpha)
   n = nrow(X); p = ncol(X)
 
@@ -351,10 +358,12 @@ get_mean_var_shifts = function(Y, tree, alpha, lambda1, lambda2,
 #' @export
 backward_correction = function(tree, Y, alpha, sv_mean, sv_var,
                                 criterion = 'BIC', original_model = NULL,
-                                measurement_error = FALSE, verbose = FALSE) {
+                                measurement_error = FALSE, max.num.shifts = Inf,
+                                verbose = FALSE) {
   if (is.null(original_model)) {
     OModel = fit_OU_mean_var(tree, Y, alpha, sv_mean, sv_var,
-                              measurement_error = measurement_error, verbose = verbose)
+                              measurement_error = measurement_error,
+                              max.num.shifts = max.num.shifts, verbose = verbose)
   } else {
     OModel = original_model
   }
@@ -367,28 +376,38 @@ backward_correction = function(tree, Y, alpha, sv_mean, sv_var,
   for (i in 1:(n1 + n2)) {
     if (i <= length(sv_mean)) {
       new_Model = fit_OU_mean_var(tree, Y, alpha, setdiff(sv_mean, sv_mean[i]), sv_var,
-                                   measurement_error = measurement_error, verbose = verbose)
+                                   measurement_error = measurement_error,
+                                   max.num.shifts = max.num.shifts, verbose = verbose)
     } else {
       new_Model = fit_OU_mean_var(tree, Y, alpha, sv_mean, setdiff(sv_var, sv_var[i - n1]),
-                                   measurement_error = measurement_error, verbose = verbose)
+                                   measurement_error = measurement_error,
+                                   max.num.shifts = max.num.shifts, verbose = verbose)
     }
-    after_score_list[i] = new_Model[[criterion]][[1]]
-    if (after_score_list[i] < best_score) {
+    score_i = new_Model[[criterion]][[1]]
+    if (!is.finite(score_i)) score_i = Inf
+    after_score_list[i] = score_i
+    if (isTRUE(score_i < best_score)) {
       OModel = new_Model
-      best_score = after_score_list[i]
+      best_score = score_i
     }
   }
   index_list = order(after_score_list)[sort(after_score_list) < original_score]
+  if (length(index_list) == 0) return(OModel)
   remove_list = c(index_list[1])
-  for (i in index_list[2:length(index_list)]) {
-    new_Model = fit_OU_mean_var(tree, Y, alpha,
-                                 setdiff(sv_mean, sv_mean[c(i, remove_list)[c(i, remove_list) <= n1]]),
-                                 setdiff(sv_var, sv_var[c(i, remove_list)[c(i, remove_list) > n1] - n1]),
-                                 measurement_error = measurement_error, verbose = verbose)
-    if (new_Model[[criterion]][[1]] < best_score) {
-      OModel = new_Model
-      best_score = new_Model[[criterion]][[1]]
-      remove_list = c(remove_list, i)
+  if (length(index_list) >= 2) {
+    for (i in index_list[2:length(index_list)]) {
+      new_Model = fit_OU_mean_var(tree, Y, alpha,
+                                   setdiff(sv_mean, sv_mean[c(i, remove_list)[c(i, remove_list) <= n1]]),
+                                   setdiff(sv_var, sv_var[c(i, remove_list)[c(i, remove_list) > n1] - n1]),
+                                   measurement_error = measurement_error,
+                                   max.num.shifts = max.num.shifts, verbose = verbose)
+      score_new = new_Model[[criterion]][[1]]
+      if (!is.finite(score_new)) score_new = Inf
+      if (isTRUE(score_new < best_score)) {
+        OModel = new_Model
+        best_score = score_new
+        remove_list = c(remove_list, i)
+      }
     }
   }
   return(OModel)
@@ -404,6 +423,7 @@ backward_correction = function(tree, Y, alpha, sv_mean, sv_var,
 #' @param max.steps Max iterations.
 #' @param nfolds CV folds.
 #' @param top_k Top candidates for backward correction.
+#' @param lambda.type \code{"lambda.1se"} (default, conservative) or \code{"lambda.min"} (less conservative).
 #' @param measurement_error Logical.
 #' @param verbose Logical. Default FALSE.
 #' @return List with best_model and score_summary.
@@ -413,6 +433,8 @@ get_mean_var_shifts_model_selection = function(Y, tree, alpha,
                                                lambda1_list = NULL, lambda2_list = exp(1:10 - 6),
                                                criterion = "BIC", max.steps = 300,
                                                nfolds = 5, top_k = 3,
+                                               lambda.type = "lambda.1se",
+                                               max.num.shifts = Inf,
                                                measurement_error = FALSE, verbose = FALSE) {
   X = generate_design_matrix(tree, 'simpX')
   Y = as.vector(Y)
@@ -436,21 +458,30 @@ get_mean_var_shifts_model_selection = function(Y, tree, alpha,
     SqrtInvSigma = svd_result$u %*% diag(sqrt(svd_result$d)) %*% t(svd_result$v)
     YY = SqrtInvSigma %*% Y
     XX = SqrtInvSigma %*% X
-    lambda1 = cv.glmnet(XX, YY, lambda = lambda1_list, intercept = FALSE, nfolds = nfolds)$lambda.1se
+    lambda1 = cv.glmnet(XX, YY, lambda = lambda1_list, intercept = FALSE, nfolds = nfolds)[[lambda.type]]
     ret = get_mean_var_shifts(Y, tree, alpha, lambda1, lambda2, max.steps = max.steps,
                               measurement_error = measurement_error, verbose = verbose)
     OModel = fit_OU_mean_var(tree, Y1, alpha, ret$sv_mean, ret$sv_var,
-                              measurement_error = measurement_error, verbose = verbose)
+                              measurement_error = measurement_error,
+                              max.num.shifts = max.num.shifts, verbose = verbose)
     score_summary[nrow(score_summary) + 1, ] = c(lambda1, lambda2,
                                                    paste(ret$sv_mean, collapse = ';'),
                                                    paste(ret$sv_var, collapse = ';'),
                                                    OModel$loglik, OModel$BIC, OModel$mBIC, OModel$pBIC)
-    if (OModel[[criterion]][[1]] < best_score) {
-      best_score = OModel[[criterion]][[1]]
+    score_o = OModel[[criterion]][[1]]
+    if (!is.finite(score_o)) score_o = Inf
+    if (isTRUE(score_o < best_score)) {
+      best_score = score_o
       best_Model = OModel
       best_Model$lambda1 = lambda1
       best_Model$lambda2 = lambda2
     }
+  }
+
+  if (!exists("best_Model")) {
+    best_Model = OModel
+    best_Model$lambda1 = lambda1
+    best_Model$lambda2 = lambda2
   }
 
   score_summary = score_summary[!duplicated(score_summary[, c('sv_mean','sv_var')]), ]
@@ -464,12 +495,15 @@ get_mean_var_shifts_model_selection = function(Y, tree, alpha,
     sv_mean = as.numeric(strsplit(score_summary$sv_mean[ind], ';')[[1]])
     sv_var = as.numeric(strsplit(score_summary$sv_var[ind], ';')[[1]])
     OModel = backward_correction(tree, Y1, alpha, sv_mean, sv_var,
-                                  measurement_error = measurement_error, verbose = verbose)
+                                  measurement_error = measurement_error,
+                                  max.num.shifts = max.num.shifts, verbose = verbose)
     score_summary[ind, 9:14] = c(paste(which(OModel$beta != 0), collapse = ';'),
                                   paste(which(OModel$gamma != 0), collapse = ';'),
                                   OModel$loglik, OModel$BIC, OModel$mBIC, OModel$pBIC)
-    if (OModel[[criterion]][[1]] < best_score) {
-      best_score = OModel[[criterion]][[1]]
+    score_o = OModel[[criterion]][[1]]
+    if (!is.finite(score_o)) score_o = Inf
+    if (isTRUE(score_o < best_score)) {
+      best_score = score_o
       best_Model = OModel
       best_Model$lambda1 = score_summary$lambda1[ind]
       best_Model$lambda2 = score_summary$lambda2[ind]
@@ -495,6 +529,7 @@ get_mean_var_shifts_model_selection = function(Y, tree, alpha,
 #' @param max.steps Max iterations. Default 300.
 #' @param nfolds CV folds. Default 8.
 #' @param top_k Top candidates for backward correction. Default 10.
+#' @param lambda.type \code{"lambda.1se"} (default) or \code{"lambda.min"}.
 #' @param measurement_error Logical. Default FALSE.
 #' @param refit_alpha Logical. If TRUE, refit alpha after detection. Default TRUE.
 #' @param verbose Logical. Default FALSE.
@@ -505,6 +540,8 @@ ShiVa = function(Y, tree, alpha = NULL, t = 0.01,
                   lambda1_list = NULL, lambda2_list = exp(1:10 - 6),
                   criterion = "BIC", max.steps = 300,
                   nfolds = 5, top_k = 3,
+                  lambda.type = "lambda.1se",
+                  max.num.shifts = Inf,
                   measurement_error = FALSE,
                   refit_alpha = TRUE, verbose = FALSE) {
 
@@ -519,7 +556,8 @@ ShiVa = function(Y, tree, alpha = NULL, t = 0.01,
   # Step 2: run model selection
   result = get_mean_var_shifts_model_selection(Y, tree, alpha,
               lambda1_list, lambda2_list, criterion, max.steps,
-              nfolds, top_k, measurement_error, verbose)
+              nfolds, top_k, lambda.type, max.num.shifts,
+              measurement_error, verbose)
   result$alpha = alpha
 
   # Step 3: optionally refit alpha
@@ -535,9 +573,14 @@ ShiVa = function(Y, tree, alpha = NULL, t = 0.01,
     alpha_refit = refit_fit$optpar
 
     refit_model = fit_OU_mean_var(tree, Y, alpha_refit, sv_mean, sv_var,
-                                   measurement_error = measurement_error, verbose = verbose)
+                                   measurement_error = measurement_error,
+                                   max.num.shifts = max.num.shifts, verbose = verbose)
 
-    if (refit_model[[criterion]][[1]] < result$best_model[[criterion]][[1]]) {
+    score_refit = refit_model[[criterion]][[1]]
+    score_orig  = result$best_model[[criterion]][[1]]
+    if (!is.finite(score_refit)) score_refit = Inf
+    if (!is.finite(score_orig))  score_orig  = Inf
+    if (isTRUE(score_refit < score_orig)) {
       result$best_model = refit_model
       result$alpha_refit = alpha_refit
       if (verbose) cat("Refit improved: alpha_refit =", alpha_refit, "\n")
